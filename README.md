@@ -164,6 +164,46 @@ A：收藏存 localStorage。定期在「设置与数据」里导出 JSON 备份
 
 ---
 
+## 版本控制
+
+远程仓库：<https://github.com/dazhi-G/macTool>（私有）
+
+本仓库使用**仓库级** git 身份，不污染全局配置——本机全局身份属于码云自有项目，两者互不干扰：
+
+| 作用域 | 身份 |
+|---|---|
+| 全局（码云项目用） | 你本机原有配置，未改动 |
+| 本仓库 | `dazhi-G <254804870+dazhi-G@users.noreply.github.com>` |
+
+用 GitHub 的 noreply 邮箱，提交照样归属账号，又不会把真实邮箱暴露在提交记录里。
+
+**新克隆的机器要补一次仓库级身份**（仓库级配置不随克隆传递）：
+
+```bash
+git config user.name "dazhi-G"
+git config user.email "254804870+dazhi-G@users.noreply.github.com"
+```
+
+**推送凭据**存在 macOS 钥匙串（`git credential-osxkeychain`），无需每次输入：
+
+```bash
+# 只需一次。PAT 需勾 repo 作用域，长度 40 字符
+printf 'protocol=https\nhost=github.com\nusername=dazhi-G\npassword=%s\n\n' "你的PAT" \
+  | git credential-osxkeychain store
+```
+
+> 坑：命令里的 PAT 若写在**双引号**里，zsh 交互式终端会对 `!` 做历史展开，可能静默吃掉一个字符，存进钥匙串的就是残缺 token（表现是 `401 Bad credentials`）。用上面的 `printf ... '%s' "$PAT"` 写法，或先 `read -rs PAT` 读入变量更稳。
+>
+> 另一个坑：`git credential-osxkeychain store` **不会覆盖**同 host 的旧条目，会新增一条；`get` 取回的是旧的那条。存错之后要先清干净：`security delete-internet-password -s github.com`。
+
+**推送协议**：本仓库固定 `http.version=HTTP/1.1`（已写入仓库级配置）。Apple Git 2.39 走 HTTP/2 时 `git-receive-pack` 的 POST 会被 GitHub 拒为 `400 RPC failed`，降级 HTTP/1.1 即正常。新克隆的机器同理建议补一条：
+
+```bash
+git config http.version HTTP/1.1
+```
+
+---
+
 ## 文件清单
 
 ```
