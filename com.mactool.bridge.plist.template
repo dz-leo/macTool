@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!--
+  Mac 工具管理台 · 开机自启配置模板（launchd）
+
+  这是模板，不能直接 cp 使用：launchd 不展开 ~ 和环境变量，
+  ProgramArguments 里必须是写死的绝对路径，所以安装时先替换 __INSTALL_DIR__。
+
+  安装（在项目根目录执行，只需一次）：
+    sed "s|__INSTALL_DIR__|$PWD|" com.mactool.bridge.plist.template \
+      > ~/Library/LaunchAgents/com.mactool.bridge.plist
+    launchctl load -w ~/Library/LaunchAgents/com.mactool.bridge.plist
+
+  验证：
+    curl http://127.0.0.1:8899/api/ping
+
+  卸载：
+    launchctl unload -w ~/Library/LaunchAgents/com.mactool.bridge.plist
+    rm ~/Library/LaunchAgents/com.mactool.bridge.plist
+
+  说明：KeepAlive=true 表示进程意外退出会自动拉起；
+        RunAtLoad=true 表示登录后立即启动。
+-->
+<dict>
+  <key>Label</key>
+  <string>com.mactool.bridge</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/python3</string>
+    <string>__INSTALL_DIR__/mactool-bridge.py</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>/tmp/mactool-bridge.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/mactool-bridge.err</string>
+</dict>
+</plist>

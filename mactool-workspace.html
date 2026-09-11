@@ -1,0 +1,1896 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="ANBRjfCGQ6HwpkGjEnfUcp">
+<head data-page-node-id="57GGhn8XyPOcAB9kFsHMgA">
+<meta charset="UTF-8" data-page-node-id="Z56sPBsZIenSA5TaHu3Blk">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="gCzRCjRlTBwecQTbx1D7Dh">
+<meta name="apple-mobile-web-app-capable" content="yes" data-page-node-id="6C6m6dLYVhesYmgbiGhrjk">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" data-page-node-id="kpVy5jCDUEIpwgYMczWyci">
+<meta name="apple-mobile-web-app-title" content="Mac 工具台" data-page-node-id="VYokYvJGzIjCRHI4rJTch9">
+<title>Mac 工具管理台</title>
+<!-- 单文件工作台：全部 CSS/JS 内联，零外部依赖，图表与图标均为内联 SVG -->
+<style>
+/* ═══════════════ 设计 token · Apple 风格 ═══════════════
+   亮色为主，自动跟随系统深色模式。
+   强调色用 iOS 系统色（亮暗通吃），中性色全部走变量。 */
+:root{
+  --bg:#f5f5f7; --bg2:#fbfbfd; --card:#ffffff; --card2:#f2f2f7;
+  --seg:#e8e8ed;
+  --line:rgba(0,0,0,.07); --line2:rgba(0,0,0,.14);
+  --tx:#1d1d1f; --tx2:#515154; --tx3:#86868b;
+  --pri:#0071e3; --pri-d:#0066cc;
+  --ok:#34c759; --warn:#ff9500; --err:#ff3b30; --purple:#af52de; --cyan:#32ade6;
+  --hd:rgba(251,251,253,.82); --code-bg:#f6f6f8; --code-tx:#1d1d1f;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.05);
+  --toast-sh:0 8px 28px rgba(0,0,0,.22);
+  --r:16px; --r-s:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#000000; --bg2:#1c1c1e; --card:#1c1c1e; --card2:#2c2c2e;
+    --seg:#2c2c2e;
+    --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.18);
+    --tx:#f5f5f7; --tx2:#c7c7cc; --tx3:#8e8e93;
+    --pri:#0a84ff; --pri-d:#3395ff;
+    --ok:#30d158; --warn:#ff9f0a; --err:#ff453a; --purple:#bf5af2; --cyan:#64d2ff;
+    --hd:rgba(22,22,23,.82); --code-bg:#111113; --code-tx:#f5f5f7;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+    --toast-sh:0 8px 28px rgba(0,0,0,.6);
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--tx);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","PingFang SC","Microsoft YaHei",sans-serif;
+  font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;
+  padding-bottom:calc(76px + env(safe-area-inset-bottom));
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+svg{display:block}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;font-size:inherit}
+input,select,textarea{font-family:inherit;font-size:16px}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:5px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- 顶栏 ---------- */
+header{
+  position:sticky;top:0;z-index:50;background:var(--hd);
+  backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-bottom:1px solid var(--line);
+}
+.hd{display:flex;align-items:center;gap:12px;height:56px}
+.logo{display:flex;align-items:center;gap:9px;min-width:0}
+.logo-t{font-size:16px;font-weight:700;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.logo-s{font-size:11px;color:var(--tx3);margin-top:-2px}
+.hd-sp{flex:1}
+
+/* 连接状态 */
+.conn{display:flex;align-items:center;gap:6px;font-size:12px;padding:5px 10px;border-radius:20px;border:1px solid var(--line);white-space:nowrap}
+.conn.on{color:var(--ok);border-color:rgba(52,199,89,.3);background:rgba(52,199,89,.08)}
+.conn.off{color:var(--warn);border-color:rgba(255,159,10,.3);background:rgba(255,159,10,.08)}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.conn.on .dot{animation:pulse 2.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ---------- 按钮 ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  min-height:36px;padding:0 13px;border-radius:var(--r-s);background:var(--card2);
+  border:1px solid var(--line);color:var(--tx2);font-size:13px;font-weight:500;transition:.15s}
+.btn:hover{background:var(--seg);color:var(--tx);border-color:var(--line2)}
+.btn:active{transform:scale(.97)}
+.btn.pri{background:var(--pri);border-color:var(--pri);color:#fff}
+.btn.pri:hover{background:var(--pri-d);border-color:var(--pri-d);color:#fff}
+.btn.ok{background:rgba(52,199,89,.14);border-color:rgba(52,199,89,.35);color:var(--ok)}
+.btn.ok:hover{background:rgba(52,199,89,.22)}
+.btn.warn{background:rgba(255,159,10,.14);border-color:rgba(255,159,10,.35);color:var(--warn)}
+.btn.warn:hover{background:rgba(255,159,10,.22)}
+.btn.err{background:rgba(255,69,58,.14);border-color:rgba(255,69,58,.35);color:var(--err)}
+.btn.err:hover{background:rgba(255,69,58,.22)}
+.btn.sm{min-height:30px;padding:0 10px;font-size:12px;border-radius:7px}
+.btn.ico{min-width:36px;padding:0 9px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* ---------- Tabs（Apple 分段控件） ---------- */
+.tabs{display:flex;gap:3px;overflow-x:auto;padding:0 0 10px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{display:flex;align-items:center;gap:7px;flex:none;min-height:34px;padding:0 15px;
+  border-radius:9px;color:var(--tx2);font-size:13.5px;font-weight:550;transition:.18s}
+.tab:hover{color:var(--tx)}
+.tab.on{background:var(--card);color:var(--tx);box-shadow:0 1px 4px rgba(0,0,0,.12),0 0 0 .5px var(--line)}
+.tab .n{font-size:11px;padding:1px 6px;border-radius:9px;background:var(--seg);color:var(--tx3)}
+.tab.on .n{background:rgba(0,113,227,.14);color:var(--pri)}
+
+/* ---------- 区块 ---------- */
+main{padding:16px 0 40px}
+.view{display:none;animation:fade .22s ease}
+.view.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.card-h{display:flex;align-items:center;gap:9px;margin-bottom:13px}
+.card-h h2{margin:0;font-size:15px;font-weight:620;letter-spacing:.2px}
+.card-h .sp{flex:1}
+.card-h .d{font-size:12px;color:var(--tx3)}
+.card-h .ic{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;flex:none}
+.ic-pri{background:rgba(0,113,227,.12);color:var(--pri)}
+.ic-ok{background:rgba(52,199,89,.12);color:var(--ok)}
+.ic-cyan{background:rgba(50,173,230,.12);color:var(--cyan)}
+.ic-purple{background:rgba(175,46,222,.12);color:var(--purple)}
+.ic-warn{background:rgba(255,159,10,.12);color:var(--warn)}
+
+/* ---------- 需要注意 ---------- */
+.alerts{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:14px}
+.alerts-h{display:flex;align-items:center;gap:9px;padding:12px 16px;background:linear-gradient(90deg,rgba(255,69,58,.12),rgba(255,69,58,.02));border-bottom:1px solid var(--line)}
+.alerts-h h2{margin:0;font-size:14px;font-weight:620}
+.alerts-h .cnt{margin-left:auto;font-size:11px;font-weight:650;padding:2px 9px;border-radius:10px;background:var(--err);color:#fff}
+.alerts-h.calm{background:linear-gradient(90deg,rgba(52,199,89,.12),rgba(52,199,89,.02))}
+.alerts-h.calm .cnt{background:var(--ok)}
+.alert{display:flex;align-items:center;gap:11px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--bg2)}
+.alert:last-child{border-bottom:none}
+.alert .bar{width:3px;align-self:stretch;border-radius:2px;flex:none;background:var(--warn)}
+.alert.lv-err .bar{background:var(--err)}
+.alert .tx{flex:1;min-width:0}
+.alert .t1{font-size:13.5px;font-weight:560}
+.alert .t2{font-size:12px;color:var(--tx3);margin-top:1px;word-break:break-all}
+.alert .ac{display:flex;gap:6px;flex:none}
+
+/* ---------- 首屏工作台（需要注意 + 概览 双栏） ---------- */
+.dash{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:14px;margin-bottom:14px;align-items:start}
+.dash > *{margin-bottom:0}
+.dash:has(> [hidden]){grid-template-columns:1fr}
+@media(max-width:960px){.dash{grid-template-columns:1fr}}
+
+/* ---------- 概览 ---------- */
+.ov{display:grid;grid-template-columns:150px 1fr;gap:16px;align-items:center}
+.ov-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:10px}
+.ov-s{background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:11px 12px}
+.ov-s .v{font-size:21px;font-weight:680;line-height:1.15;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
+.ov-s .k{font-size:11.5px;color:var(--tx3);margin-top:2px}
+.ov-s .v.ok{color:var(--ok)} .ov-s .v.err{color:var(--err)} .ov-s .v.pri{color:var(--pri)}
+
+/* ---------- 服务 ---------- */
+.svc{display:flex;align-items:center;gap:13px;padding:13px 14px;border:1px solid var(--line);border-radius:12px;margin-bottom:9px;background:var(--bg2);transition:.15s}
+.svc:hover{border-color:var(--line2)}
+.svc .st{width:9px;height:9px;border-radius:50%;flex:none;background:var(--tx3)}
+.svc.run .st{background:var(--ok);box-shadow:0 0 0 4px rgba(52,199,89,.14)}
+.svc.stop .st{background:var(--err);box-shadow:0 0 0 4px rgba(255,69,58,.13)}
+.svc.err .st{background:var(--warn);box-shadow:0 0 0 4px rgba(255,159,10,.14)}
+.svc .info{flex:1;min-width:0}
+.svc .nm{font-size:14.5px;font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.svc .meta{font-size:11.5px;color:var(--tx3);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap}
+.svc .meta b{color:var(--cyan);font-weight:600}
+.svc .ac{display:flex;gap:6px;flex:none;flex-wrap:wrap;justify-content:flex-end}
+.badge{font-size:11px;padding:1.5px 7px;border-radius:6px;background:var(--card2);color:var(--tx3);font-weight:600;letter-spacing:.2px}
+.badge.run{background:rgba(52,199,89,.15);color:var(--ok)}
+.badge.stop{background:rgba(255,69,58,.15);color:var(--err)}
+.badge.err{background:rgba(255,159,10,.15);color:var(--warn)}
+
+/* ---------- 表格 ---------- */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;padding:9px 10px;color:var(--tx3);font-size:11.5px;font-weight:600;
+  border-bottom:1px solid var(--line);white-space:nowrap;letter-spacing:.3px}
+.tbl td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--bg2)}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px}
+
+/* ---------- 直达卡片 ---------- */
+.links{display:grid;grid-template-columns:repeat(auto-fill,minmax(272px,1fr));gap:11px}
+.lk{border:1px solid var(--line);border-radius:12px;padding:13px;background:var(--bg2);transition:.15s;position:relative}
+.lk:hover{border-color:var(--line2);background:var(--card2)}
+.lk .t{display:flex;align-items:flex-start;gap:9px;margin-bottom:3px}
+.lk .ic{width:30px;height:30px;border-radius:8px;flex:none;display:grid;place-items:center;background:var(--card2);border:1px solid var(--line)}
+.lk .ic.c-dir{background:rgba(175,46,222,.1);border-color:transparent;color:var(--purple)}
+.lk .ic.c-file{background:rgba(50,173,230,.1);border-color:transparent;color:var(--cyan)}
+.lk .nm{font-size:14px;font-weight:600;line-height:1.3;word-break:break-all}
+.lk .tag{font-size:11px;color:var(--tx3);margin-left:auto;flex:none;padding:1px 7px;border-radius:6px;background:var(--card2);border:1px solid var(--line)}
+.lk .pth{font-size:11.5px;color:var(--tx3);word-break:break-all;margin:5px 0 10px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;line-height:1.45}
+.lk .ac{display:flex;gap:5px;flex-wrap:wrap}
+.lk .del{position:absolute;top:9px;right:9px;opacity:0;transition:.15s;color:var(--tx3);
+  width:24px;height:24px;border-radius:6px;display:grid;place-items:center}
+.lk:hover .del{opacity:1}
+.lk .del:hover{background:rgba(255,69,58,.16);color:var(--err)}
+.lk:has(.del){padding-right:38px}
+
+/* ---------- 快捷键 ---------- */
+.sc-tools{display:flex;gap:9px;margin-bottom:13px;flex-wrap:wrap}
+.search{flex:1;min-width:190px;position:relative}
+.search input{width:100%;height:38px;padding:0 34px 0 34px;border-radius:10px;background:var(--bg2);
+  border:1px solid var(--line);color:var(--tx);outline:none}
+.search input:focus{border-color:var(--pri)}
+.search input::placeholder{color:var(--tx3)}
+.search .si{position:absolute;left:11px;top:11px;color:var(--tx3)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:13px}
+.chip{padding:5px 12px;border-radius:16px;background:var(--bg2);border:1px solid var(--line);
+  color:var(--tx2);font-size:12.5px;font-weight:520;transition:.15s}
+.chip:hover{border-color:var(--line2);color:var(--tx)}
+.chip.on{background:rgba(0,113,227,.1);border-color:rgba(0,113,227,.4);color:var(--pri)}
+
+.sc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:9px}
+.sc{display:flex;align-items:center;gap:11px;padding:10px 12px;border:1px solid var(--line);
+  border-radius:11px;background:var(--bg2);transition:.15s}
+.sc:hover{border-color:var(--line2)}
+.keys{display:flex;gap:4px;flex:none;flex-wrap:wrap;justify-content:flex-start;min-width:104px}
+kbd{display:inline-block;min-width:24px;padding:2px 7px;border-radius:6px;text-align:center;
+  background:var(--card2);border:1px solid var(--line2);border-bottom-width:2px;
+  font-size:11.5px;font-weight:620;font-family:-apple-system,system-ui,sans-serif;color:var(--tx)}
+.sc .dsc{flex:1;font-size:13px;min-width:0;line-height:1.4}
+.sc .fav{flex:none;color:var(--tx3);width:30px;height:30px;border-radius:7px;display:grid;place-items:center}
+.sc .fav:hover{background:rgba(255,159,10,.13);color:var(--warn)}
+.sc .fav.on{color:var(--warn)}
+
+/* ---------- 命令片段 ---------- */
+.snip{border:1px solid var(--line);border-radius:11px;margin-bottom:9px;background:var(--bg2);overflow:hidden}
+.snip-h{display:flex;align-items:center;gap:10px;padding:10px 13px}
+.snip-h .d{flex:1;min-width:0;font-size:13px;color:var(--tx2);line-height:1.4}
+.snip-c{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;
+  padding:10px 13px;background:var(--code-bg);border-top:1px solid var(--line);color:var(--code-tx);
+  word-break:break-all;white-space:pre-wrap;line-height:1.6;display:flex;gap:10px;align-items:flex-start}
+.snip-c code{flex:1;min-width:0}
+.snip .cp{flex:none;color:var(--tx3);width:28px;height:28px;border-radius:7px;display:grid;place-items:center}
+.snip .cp:hover{background:rgba(74,158,255,.15);color:var(--pri)}
+
+/* ---------- 表单 / 弹窗 ---------- */
+.mask{position:fixed;inset:0;background:rgba(0,0,0,.4);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:100;
+  display:none;align-items:center;justify-content:center;padding:16px}
+.mask.on{display:flex}
+.modal{background:var(--card);border:1px solid var(--line2);border-radius:18px;width:100%;
+  max-width:440px;max-height:86vh;overflow-y:auto;animation:pop .2s ease}
+@keyframes pop{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:none}}
+.modal-h{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--line)}
+.modal-h h3{margin:0;font-size:15px;font-weight:620;flex:1}
+.modal-b{padding:18px}
+.modal-f{display:flex;gap:9px;padding:0 18px 18px}
+.modal-f .btn{flex:1;min-height:42px}
+.fld{margin-bottom:14px}
+.fld label{display:block;font-size:12.5px;color:var(--tx2);margin-bottom:6px;font-weight:550}
+.fld input,.fld select,.fld textarea{width:100%;padding:10px 12px;border-radius:9px;
+  background:var(--bg2);border:1px solid var(--line);color:var(--tx);outline:none;line-height:1.5}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--pri)}
+.fld .hint{font-size:11.5px;color:var(--tx3);margin-top:5px}
+.x{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--tx3)}
+.x:hover{background:var(--card2);color:var(--tx)}
+
+/* ---------- Toast ---------- */
+.toast{position:fixed;left:50%;bottom:88px;transform:translate(-50%,14px);z-index:200;
+  background:var(--card);border:1px solid var(--line2);border-radius:12px;padding:11px 17px;
+  font-size:13.5px;box-shadow:var(--toast-sh);opacity:0;pointer-events:none;transition:.22s;
+  max-width:88vw;text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.toast.ok{border-color:rgba(52,199,89,.4)} .toast.err{border-color:rgba(255,69,58,.45)}
+
+/* ---------- 底部 Tab（移动端） ---------- */
+.mtabs{display:none;position:fixed;left:0;right:0;bottom:0;z-index:60;
+  background:var(--hd);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+.mtabs .in{display:flex}
+.mtab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 2px 7px;
+  color:var(--tx3);font-size:11px;font-weight:550;min-height:52px;justify-content:center}
+.mtab.on{color:var(--pri)}
+.mtab .ic{position:relative}
+.mtab .dg{position:absolute;top:-3px;right:-6px;min-width:15px;height:15px;border-radius:8px;
+  background:var(--err);color:#fff;font-size:9.5px;font-weight:700;display:grid;place-items:center;padding:0 4px}
+
+.note{font-size:12px;color:var(--tx3);line-height:1.6;padding:11px 13px;border-radius:10px;
+  background:var(--bg2);border:1px solid var(--line);margin-bottom:13px}
+.note b{color:var(--tx2)}
+.sec-t{display:flex;align-items:center;gap:8px;margin:20px 0 11px;font-size:13px;
+  color:var(--tx2);font-weight:600;letter-spacing:.2px}
+.sec-t:first-child{margin-top:0}
+.sec-t .ln{flex:1;height:1px;background:var(--line)}
+
+/* ---------- Hero（每日问候 · 单行紧凑） ---------- */
+.hero{padding:18px 2px 12px;display:flex;align-items:baseline;gap:5px 14px;flex-wrap:wrap}
+.hero .ht{font-size:23px;font-weight:700;letter-spacing:-.4px;line-height:1.25}
+.hero .hs{font-size:13px;color:var(--tx3)}
+@media(max-width:768px){.hero{padding:14px 2px 8px}.hero .ht{font-size:20px}}
+
+/* ---------- 每日一技 ---------- */
+.tip{background:linear-gradient(135deg,rgba(0,113,227,.06),rgba(175,46,222,.05));
+  border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.tip-h{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.tip-h .tt{font-size:12px;font-weight:650;color:var(--pri);letter-spacing:.5px}
+.tip-h .sp{flex:1}
+.tip-h .chg{font-size:11.5px;color:var(--tx3)}
+.tip .t1{font-size:17px;font-weight:680;letter-spacing:-.2px;margin-bottom:5px}
+.tip .t2{font-size:13.5px;color:var(--tx2);line-height:1.65}
+.tip .steps{margin:10px 0 0;padding:0;list-style:none}
+.tip .steps li{font-size:13px;color:var(--tx2);padding:5px 0 5px 26px;position:relative;line-height:1.55}
+.tip .steps li::before{content:attr(data-n);position:absolute;left:0;top:6px;width:18px;height:18px;
+  border-radius:50%;background:var(--pri);color:#fff;font-size:10.5px;font-weight:700;
+  display:grid;place-items:center}
+.tip .steps li b{color:var(--tx);font-weight:620}
+
+/* ---------- 清理 ---------- */
+.lv-chips{display:flex;gap:3px;background:var(--seg);border-radius:10px;padding:3px;width:fit-content;margin-bottom:14px}
+.lv-chip{min-height:30px;padding:0 16px;border-radius:8px;font-size:13px;font-weight:550;color:var(--tx2);transition:.18s}
+.lv-chip.on{background:var(--card);color:var(--tx);box-shadow:0 1px 4px rgba(0,0,0,.12),0 0 0 .5px var(--line)}
+.cl-fails{margin:0 0 14px;border:1px solid var(--warn);border-radius:12px;background:var(--card);overflow:hidden}
+.cl-fails summary{cursor:pointer;padding:11px 15px;font-size:13px;font-weight:600;color:var(--warn);list-style:none;display:flex;align-items:center;gap:7px}
+.cl-fails summary::-webkit-details-marker{display:none}
+.cl-fails summary::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--warn);flex:none}
+.cl-fails[open] summary{border-bottom:1px solid var(--line)}
+.cl-fail{display:flex;gap:12px;padding:8px 15px;font-size:12.5px;border-bottom:1px solid var(--line)}
+.cl-fail:last-of-type{border-bottom:none}
+.cl-fail .fn{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--tx);flex:none;max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cl-fail .fr{color:var(--tx2)}
+.cl-ftip{padding:9px 15px;font-size:12px;color:var(--tx3);background:var(--bg2)}
+.cl-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);
+  border-radius:13px;margin-bottom:9px;background:var(--bg2);transition:.15s}
+.cl-item:hover{border-color:var(--line2)}
+.cl-item.off{opacity:.5}
+.cl-item .ck{width:20px;height:20px;flex:none;accent-color:var(--pri);cursor:pointer}
+.cl-item .info{flex:1;min-width:0}
+.cl-item .nm{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cl-item .pth{font-size:11px;color:var(--tx3);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  margin-top:2px;word-break:break-all}
+.cl-item .ds{font-size:12px;color:var(--tx3);margin-top:2px}
+.cl-item .sz{font-size:15px;font-weight:680;flex:none;letter-spacing:-.2px;font-variant-numeric:tabular-nums}
+.risk{font-size:11px;font-weight:650;padding:1.5px 7px;border-radius:6px;letter-spacing:.3px}
+.risk.r1{background:rgba(52,199,89,.14);color:#248a3d}
+.risk.r2{background:rgba(0,113,227,.12);color:var(--pri)}
+.risk.r3{background:rgba(255,159,10,.16);color:#b25000}
+@media (prefers-color-scheme: dark){
+  .risk.r1{color:#30d158}.risk.r3{color:#ff9f0a}
+}
+.cl-sum{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:13px;
+  background:var(--bg2);border:1px solid var(--line);margin-bottom:12px}
+.cl-sum .big{font-size:24px;font-weight:750;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.cl-sum .sub{font-size:12.5px;color:var(--tx3)}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--tx3);border-top-color:var(--pri);
+  border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---------- 响应式 ---------- */
+@media(max-width:860px){
+  .ov{grid-template-columns:1fr}
+  .ov .ring{display:flex;justify-content:center}
+}
+@media(max-width:768px){
+  body{font-size:15px;padding-bottom:calc(66px + env(safe-area-inset-bottom))}
+  .wrap{padding:0 12px}
+  .tabs{display:none}
+  .mtabs{display:block}
+  .hd{height:54px;gap:8px}
+  .logo-s{display:none}
+  .hd .btn{height:36px}
+  .card{padding:13px;border-radius:12px}
+  .sc-grid{grid-template-columns:1fr}
+  .links{grid-template-columns:1fr}
+  .svc{flex-wrap:wrap;gap:10px}
+  .svc .ac{width:100%;justify-content:flex-start;margin-left:22px}
+  .btn{min-height:38px}
+  .btn.sm{min-height:34px;padding:0 11px;font-size:12.5px}
+  .alert{flex-wrap:wrap}
+  .alert .ac{width:100%;padding-left:14px}
+  .conn{font-size:11px;padding:4px 8px}
+  .conn .lb{display:none}
+  .ov-stats{grid-template-columns:repeat(2,1fr)}
+  kbd{min-width:26px;padding:3px 8px;font-size:12px}
+}
+@media(max-width:380px){
+  .ov-stats{grid-template-columns:1fr}
+}
+/* 触屏无 hover：直达卡片删除键常显，避免点到看不见的按钮 */
+@media (hover:none){
+  .lk .del{opacity:1}
+}
+</style>
+</head>
+<body data-page-node-id="InityuSpx8cALT7YERlBUL">
+
+<header data-page-node-id="XWHGc0U0ev0WvF9GML6BkE">
+  <div class="wrap hd" data-page-node-id="oRT0nGPEn2WoNbPML5m3Br">
+    <div class="logo" data-page-node-id="xYw8skZw0kxUqRBFFBBK1U">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" style="color:var(--pri)" data-page-node-id="QVZY3W5XiSaKhWfepwFxu7">
+        <rect x="2" y="3" width="20" height="14" rx="3" stroke="currentColor" stroke-width="1.6" data-page-node-id="1yBYax2RaBinpgw8MDUNMX"/>
+        <path d="M8 21h8M12 17v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" data-page-node-id="3lST4kODcFzTZyGyUYqeJx"/>
+        <circle cx="8.5" cy="9" r="1.4" fill="currentColor" data-page-node-id="iH3wIJcTjcAeo8cQZ3pFwv"/>
+        <path d="M11.5 12.5l2-2M13.5 10.5l2 2" style="stroke:var(--cyan)" stroke-width="1.4" stroke-linecap="round" data-page-node-id="xjlWL4lKYZl72mXzJGv76O"/>
+      </svg>
+      <div data-page-node-id="gUfgEibcoIBdmBToIo9dwZ">
+        <div class="logo-t" data-page-node-id="8mZ0DaUHVjD7gECIMahNUg">Mac 工具管理台</div>
+        <div class="logo-s" id="hostLine" data-page-node-id="oCqu4QjVh8uJlMBgSQnI10">本机控制台</div>
+      </div>
+    </div>
+    <div class="hd-sp" data-page-node-id="FAE8YOd89z8E2EysdviofF"></div>
+    <div class="conn off" id="conn" data-page-node-id="sfUQ0dYXSinFmiMj4FiF37"><span class="dot" data-page-node-id="bcuSlcHLOXcSB76PFxGlff"></span><span class="lb" data-page-node-id="PS25UCzFXcQLb6Q33zbKGB">连接中…</span></div>
+    <button class="btn ico" id="btnRefresh" title="刷新" data-page-node-id="KYm7BDWVkgehT5E3nKx6X6">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="FLoTTe8K8HSgbkmlX0fk0P">
+        <path d="M21 12a9 9 0 11-3-6.7L21 8" data-page-node-id="JGd0wSRkfevpurFW3BfFaZ"/><path d="M21 3v5h-5" data-page-node-id="ldLcYSW6GJVJnrXvrM0XDC"/>
+      </svg>
+    </button>
+    <button class="btn ico" id="btnMenu" title="更多" data-page-node-id="KWRxijqrkWvClIMo5A2l5h">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" data-page-node-id="6C8XnaTABOSUFyzdxZ8xa4">
+        <circle cx="5" cy="12" r="1.9" data-page-node-id="NwMWF8EQh7GDmDe90X3Lp0"/><circle cx="12" cy="12" r="1.9" data-page-node-id="NPRaYJkSmXnND0Ubns2Cjw"/><circle cx="19" cy="12" r="1.9" data-page-node-id="O4xggzJvTpmkUfGgqZ9wf7"/>
+      </svg>
+    </button>
+  </div>
+  <div class="wrap" data-page-node-id="bxMGAtQ7Rve61guFFGGrXZ"><div class="tabs" id="tabs" data-page-node-id="z8tYLnC6ieXLDRgs45TUYo"></div></div>
+</header>
+
+<main class="wrap" data-page-node-id="vqMfzzZyCo8WcjAfHBGsk3">
+
+  <!-- ═══ Hero 问候 ═══ -->
+  <div class="hero" id="hero" data-page-node-id="TlRWWwYvqoH6GTowimBevA"><div class="ht" id="heroT" data-page-node-id="UkZyhvHCTyeeb2O5QLOLFz"></div><div class="hs" id="heroS" data-page-node-id="ymT8kgRniceQJMYLZz7iCP"></div></div>
+
+  <!-- ═══ 首屏工作台：需要注意 + 本机概览（桌面双栏） ═══ -->
+  <div class="dash" data-page-node-id="angOr6BI3b5PnOGjBxMhEi">
+    <div class="alerts" id="alertsBox" data-page-node-id="OCaeUxfX8jeNxQ5hhfDFPR"></div>
+
+    <div class="card" id="ovCard" hidden data-page-node-id="z7UOAgPcUcBjwfdVcfG0kZ">
+      <div class="card-h" data-page-node-id="FjTAuuA5AZdOGDYnD0mKIO">
+        <span class="ic ic-pri" data-page-node-id="CMCVEG2lYMFd7zpWmvio4D"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-page-node-id="DnLvuwUcsnuZhUOMUSyEII">
+          <rect x="3" y="3" width="18" height="18" rx="3" data-page-node-id="OfZsiuUb53GOfTXy0S8uMv"/><path d="M7 15l3-4 3 3 4-6" stroke-linecap="round" data-page-node-id="nkvmLCOycUTwd2Rn4Y6QNU"/>
+        </svg></span>
+        <h2 data-page-node-id="hjD4ObnW5EbbRAkfLt6gg5">本机概览</h2><div class="sp" data-page-node-id="gwKgchsUEHszgoRPHTFnEJ"></div>
+        <div class="d" id="ovTime" data-page-node-id="EDNmImJC0nHJoV2L2dqok6"></div>
+      </div>
+      <div class="ov" data-page-node-id="fT4O8JBlK0L4BV1NWYbb4N">
+        <div class="ring" id="diskRing" data-page-node-id="ePbYGMR9PMZrEvE7qz7sOv"></div>
+        <div class="ov-stats" id="ovStats" data-page-node-id="0ij9dnW1Rujzz8Niq5abVx"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 视图 1：服务控制台 ═══ -->
+  <div class="view on" id="view-svc" data-page-node-id="uvyqFWzlSl4HClxFYjPqOR">
+    <div class="card" data-page-node-id="Ds7DFFZFKsaLSq9k78jKJg">
+      <div class="card-h" data-page-node-id="vbdKir2aSGlesFKkBKI3uw">
+        <span class="ic ic-ok" data-page-node-id="x7KkiP54Edqn5GAPgqDHXk"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-page-node-id="7owtRgsbAsirdYd8LZO57P">
+          <path d="M5 12l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="8hQCSJDMyf30G21xFlh5lG"/>
+        </svg></span>
+        <h2 data-page-node-id="xuJalB4x6C585AD9B5Uc40">brew 服务</h2><div class="sp" data-page-node-id="FErZWiNhQjuIHGQ5UIq2d0"></div>
+        <button class="btn sm" id="btnAllStart" data-page-node-id="EdmlSAT25R1MUVNC9o2SDQ">全部启动</button>
+        <button class="btn sm" id="btnAllStop" data-page-node-id="HP8ghFWsV49OxOYuR1a1WT">全部停止</button>
+      </div>
+      <div id="svcList" data-page-node-id="A0rEFw9ulsetbBn808ewyJ"></div>
+    </div>
+
+    <div class="card" data-page-node-id="Vy4fawNpPTsCk7uA32NkEP">
+      <div class="card-h" data-page-node-id="HEoii4cmPpiaAMWzQ7GuNm">
+        <span class="ic ic-cyan" data-page-node-id="I1J8VexAusIRFX2MLELeR5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-page-node-id="q1dfGkV6biEV016QWYoDM9">
+          <circle cx="12" cy="12" r="9" data-page-node-id="0a4ji3rwPDvjHT8ZrPRhxg"/><path d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18" data-page-node-id="jRwf4tGIOhDCjqwm3BbBOY"/>
+        </svg></span>
+        <h2 data-page-node-id="4mTAfpehTl0tiSCM5nS0Dh">端口占用</h2><div class="sp" data-page-node-id="tg4TJ0mgQIMR5niRHw7fYD"></div>
+        <div class="d" id="portsMeta" data-page-node-id="vGHcVgHmCoyIKY0QoMOj52">—</div>
+      </div>
+      <div style="overflow-x:auto" data-page-node-id="b7SjgDqnGhGKjxZqOGOjxF"><table class="tbl" id="portsTbl" data-page-node-id="w4joKmRV4r4bKtTAhYGM18"></table></div>
+    </div>
+  </div>
+
+  <!-- ═══ 视图 2：一键直达 ═══ -->
+  <div class="view" id="view-go" data-page-node-id="rZAXDjcjSvF7IbttflRv2d">
+    <div class="card" data-page-node-id="NxI1e5T7Cvtn3XxDnhxIMc">
+      <div class="card-h" data-page-node-id="y3ZPdvqsqbI8DGRsXbEH7v">
+        <span class="ic ic-purple" data-page-node-id="pGj2a2s5EwGRFiYH9cK38u"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-page-node-id="k8rZg96WcP66FFrYMLz133">
+          <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" stroke-linejoin="round" data-page-node-id="10H0KvdWsZXOqBLLGziZFJ"/>
+        </svg></span>
+        <h2 data-page-node-id="Fbl21L7Wr0Fv6DV21ZXneI">一键直达</h2><div class="sp" data-page-node-id="uT3IkIMDXz9hKBpKrHr3ch"></div>
+        <button class="btn sm" id="btnNewFile" data-page-node-id="3E4xF8wREHFOPtVyA0sLBo">新建文件</button>
+        <button class="btn sm pri" id="btnAddLink" data-page-node-id="2YKdxj1h2OCQS8Rn5GEAqm">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" data-page-node-id="t5UeuQKJz8pSr5cljVEZg6"><path d="M12 5v14M5 12h14" data-page-node-id="Qy7mo7y0bpnFD3QIymYJXQ"/></svg>
+          添加
+        </button>
+      </div>
+      <div class="note" id="goNote" data-page-node-id="db2zzORGAUvPhccQj4GJjq">
+        「终端」按钮会在该目录直接打开终端；文件类条目的「终端」会打开它所在的目录。
+      </div>
+      <div class="sec-t" data-page-node-id="kyhGr35Ok4nzhBKGhois7C"><span data-page-node-id="B1HdOp6rraYRpmKKR2HDfl">配置文件</span><div class="ln" data-page-node-id="npErNbWUpAwbqFYdTrF7X5"></div></div>
+      <div class="links" id="linksConf" data-page-node-id="kuB86oVqANLOGWA3BtLsSi"></div>
+      <div class="sec-t" data-page-node-id="zaGH76n89ne3F8e1ltrzUr"><span data-page-node-id="KnNbPKAoHWbQMnwZxtwKDp">常用目录</span><div class="ln" data-page-node-id="GEpiwQUncWx7GmiOJfgwiS"></div></div>
+      <div class="links" id="linksDir" data-page-node-id="FqyHjIOM9DQP4N9M1QK2Dl"></div>
+      <div class="sec-t" data-page-node-id="bhUDXRoZPDwv5nZrpfv3xD"><span data-page-node-id="iQR23ExrM6d1bKg9bk40SX">我的快捷方式</span><div class="ln" data-page-node-id="vFg92LFgnVqIEADLov2464"></div><span id="myLinkCnt" style="color:var(--tx3);font-weight:400" data-page-node-id="HwqFxMQSOw57SGcuKLJYmX"></span></div>
+      <div class="links" id="linksMy" data-page-node-id="mqp63hBJcAxcMf2CrRketp"></div>
+    </div>
+  </div>
+
+  <!-- ═══ 视图 3：快捷键 ═══ -->
+  <div class="view" id="view-key" data-page-node-id="80Ix7CvOnQbo2fK5VvlGCR">
+    <div class="card" data-page-node-id="YTe79HSjuf8i1BjCTsCiUk">
+      <div class="card-h" data-page-node-id="97PT036tHeuzjdJligMs0t">
+        <span class="ic ic-warn" data-page-node-id="mIwtAX3ZXbHQVV1mcGHHv0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-page-node-id="8vcTCCcNs8irek2xXJKPn9">
+          <rect x="2" y="6" width="20" height="12" rx="2.5" data-page-node-id="UalUE13Ay9g3jmUCutDaQr"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10" stroke-linecap="round" data-page-node-id="EWafUjAqsdjy9vY3U5YGTL"/>
+        </svg></span>
+        <h2 data-page-node-id="oH3acJVkIMUyzXKt9NzJDX">快捷键速查</h2><div class="sp" data-page-node-id="cUOjD6fpXJygCGlhiGHCd0"></div>
+        <div class="d" id="keyMeta" data-page-node-id="vtSFKShH1GvdFdfIA4UeZV"></div>
+      </div>
+      <div class="sc-tools" data-page-node-id="4fNqylOVHSf4YTart8Sxp5">
+        <div class="search" data-page-node-id="bH2SGxtdStBnmCLM2liN4B">
+          <svg class="si" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-page-node-id="mlnOtDX8wCP4X8c0SnjkAq"><circle cx="11" cy="11" r="7" data-page-node-id="Y9KqaEKeWrICAZlWA1RYkS"/><path d="M20 20l-3.5-3.5" stroke-linecap="round" data-page-node-id="iOhAJu79S482vgD35oReTr"/></svg>
+          <input id="keySearch" placeholder="搜索功能，比如「截图」「行首」…" autocomplete="off" data-page-node-id="GQ5X82UIpWDpkagjXNrOg5">
+        </div>
+        <button class="btn" id="btnFavOnly" data-page-node-id="ZG9da74fl0uHk2kWwGZCgO">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" data-page-node-id="LV0C4PA90WZ2XiuHo5iG2G"><path d="M12 3l2.6 5.5 6 .9-4.3 4.3 1 6-5.3-2.8L6.7 19.7l1-6L3.4 9.4l6-.9L12 3z" data-page-node-id="qMVvmsc8VBBLbQOrHCfs00"/></svg>
+          只看收藏
+        </button>
+      </div>
+      <div class="chips" id="keyCats" data-page-node-id="Asbq4SjYZnXcWbOKfPw6jk"></div>
+      <div class="sc-grid" id="keyList" data-page-node-id="tkDCOr0W6gAaTuxL51bV1g"></div>
+    </div>
+  </div>
+
+  <!-- ═══ 视图 4：命令片段 ═══ -->
+  <div class="view" id="view-cmd" data-page-node-id="tQ1aDmbLUVxtfjQoBtcyDK">
+    <div class="card" data-page-node-id="jOwUnrUurmDkIvAdyWKle1">
+      <div class="card-h" data-page-node-id="gHFAzncMvpChsrLHvfsiQ7">
+        <span class="ic ic-ok" data-page-node-id="nx8hDCiOwaJrYJZm3po7xv"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-page-node-id="4LnFZHszr2w5FQ9AffHSdD">
+          <path d="M8 6l-5 6 5 6M16 6l5 6-5 6" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="pNpkzMAWPRGGGL5Ko4jaAF"/>
+        </svg></span>
+        <h2 data-page-node-id="wGCXcAgRmb8wJFibA5B8oX">命令片段库</h2><div class="sp" data-page-node-id="4dYjfsakyK1XJ9vbylkzGW"></div>
+        <button class="btn sm pri" id="btnAddSnip" data-page-node-id="3FEoAlpQ5aw0k9D7r2WbdY">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" data-page-node-id="qmpjVsPXwrFI3vhsBQgUZz"><path d="M12 5v14M5 12h14" data-page-node-id="0GHC6vYZHLKA5zjl1C6yOR"/></svg>
+          添加
+        </button>
+      </div>
+      <div class="sc-tools" data-page-node-id="cyDBB8PkIqEc9Tq5CLTGmN">
+        <div class="search" data-page-node-id="d1T3jRA8PDAS8yJTfn6a1M">
+          <svg class="si" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-page-node-id="At4m3KDFNGOsFIE5Ok8tve"><circle cx="11" cy="11" r="7" data-page-node-id="uof3WGnPVtiH6noQz2A2w1"/><path d="M20 20l-3.5-3.5" stroke-linecap="round" data-page-node-id="DC2ibracNXafgk2MT551dC"/></svg>
+          <input id="cmdSearch" placeholder="搜索命令，比如「重启 nginx」…" autocomplete="off" data-page-node-id="uXxCTJwBfup9hlH6wXmPMf">
+        </div>
+      </div>
+      <div class="chips" id="cmdCats" data-page-node-id="r18BF84RgboBlaHgrEEEbW"></div>
+      <div id="cmdList" data-page-node-id="DiADidIcprh4uqsuB7PTm6"></div>
+    </div>
+  </div>
+
+  <!-- ═══ 视图 5：磁盘清理 ═══ -->
+  <div class="view" id="view-clean" data-page-node-id="UZP7c4ejuVsDEMuVVAtrQV">
+    <div class="card" data-page-node-id="BjzCf51LDFmPWHHVNARu1V">
+      <div class="card-h" data-page-node-id="3Hmuacj1u6dO3WRzOxVs3h">
+        <span class="ic ic-cyan" data-page-node-id="QWV2n0IxU0MkVJcpWUYEwZ"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-page-node-id="yY4SH55ZBfw381QW7YjmNn">
+          <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="GD7x9azaW1HFouO7CiLWPw"/>
+        </svg></span>
+        <h2 data-page-node-id="owFQe86wfnTFdCdyMwfZYD">缓存与垃圾清理</h2><div class="sp" data-page-node-id="7xiixISWvBJrqmVYt56few"></div>
+        <button class="btn sm pri" id="btnScan" data-page-node-id="w5SbJBTvzLXcBnZbKPxSXL">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" data-page-node-id="wecpvBLmjjLQFYV3W0nDFM"><circle cx="11" cy="11" r="7" data-page-node-id="nAknvBXy3VUXsfpXWN5CZe"/><path d="M20 20l-3.5-3.5" data-page-node-id="7qof0pgrndGhi4q08pwizk"/></svg>
+          开始扫描
+        </button>
+      </div>
+      <div class="note" id="cleanNote" data-page-node-id="nW6v5232Q4fHd2MHIXjVCX">
+        只扫描<b data-page-node-id="xTmSMS5sBGPBHXZJ8VTEbF">已知的缓存类目录</b>（白名单硬编码在 bridge 里），不会碰你的文档、照片和任何个人文件。
+        扫描只读不删，清理前会再列一遍清单让你确认。
+      </div>
+      <div id="cleanBody" data-page-node-id="2PH14qXuyCLzsvsrPRHyR3"></div>
+    </div>
+  </div>
+
+  <!-- ═══ 视图 6：每日小技巧 ═══ -->
+  <div class="view" id="view-tips" data-page-node-id="EIpiCLHgvrxY2CERSmEAOL">
+    <div id="tipDaily" data-page-node-id="s39pfAmfZrCQ0q9u0o9BZc"></div>
+    <div class="card" data-page-node-id="bqsBGGtMzDF3BJrOCvtBzM">
+      <div class="card-h" data-page-node-id="cADOHh71gSPis7zzwxwvID">
+        <span class="ic ic-purple" data-page-node-id="uUGOq4c93hJkiog0jZYnQb"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-page-node-id="p84M8VNbM1l2FnvVWuZupd">
+          <path d="M12 2l2.4 5.2 5.6.7-4.2 3.9 1.1 5.6-4.9-2.8-4.9 2.8 1.1-5.6L4 7.9l5.6-.7z" stroke-linejoin="round" data-page-node-id="w3ceQlhfMo36VHQqScbdJy"/>
+        </svg></span>
+        <h2 data-page-node-id="rBbVJOO5fQkvRY0GeB9tyl">不装软件 · 原生就能做到</h2>
+      </div>
+      <div id="nativeList" data-page-node-id="H84D64SKJx2tlBSGCQH2hj"></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- 移动端底部 Tab -->
+<nav class="mtabs" data-page-node-id="KFtpPFFX6TiOiXfRCmw9Q4"><div class="in" id="mtabs" data-page-node-id="KsNPNqb4ZIK2Bf71xMArc6"></div></nav>
+
+<!-- 弹窗 -->
+<div class="mask" id="mask" data-page-node-id="8g0KUmCECyXmnIhuyUklvs"><div class="modal" id="modal" data-page-node-id="0nJ2pmk8GqIl3lqhtdWLbJ"></div></div>
+<div class="toast" id="toast" data-page-node-id="4NfSDsxg8dLDs3GQbsGA4o"></div>
+
+<script>
+"use strict";
+/* ═══════════════════════════════════════════════════════════════
+   架构约定（严格遵守，勿改）：
+   数据层 → 计算层 → 渲染层，调用链单向，渲染函数之间严禁互调。
+   所有视图刷新统一走 refreshAll()。
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ───────────── 常量 ───────────── */
+var LS_KEY = "wb_mactool_v1";
+var BRIDGE = (function(){
+  // 同源托管时为空前缀；直接用 file:// 打开时回落到 127.0.0.1:8899
+  var h = location.hostname;
+  if (h === "127.0.0.1" || h === "localhost") return location.protocol + "//" + location.host;
+  return "http://127.0.0.1:8899";
+})();
+
+/* ───────────── 内置静态库（快捷键） ───────────── */
+var SHORTCUTS = [
+  // 系统
+  {c:"系统", k:["⌘","Space"], d:"聚焦搜索（Spotlight）"},
+  {c:"系统", k:["⌘","⌥","Space"], d:"聚焦搜索文件"},
+  {c:"系统", k:["⌘","⌃","Q"], d:"立即锁屏"},
+  {c:"系统", k:["⌘","⌥","Esc"], d:"强制退出应用"},
+  {c:"系统", k:["⌘","⌥","⇧","Q"], d:"强制关机（不询问）"},
+  {c:"系统", k:["⌘","⇧","Q"], d:"登出"},
+  {c:"系统", k:["⌘","⇧","Delete"], d:"清空废纸篓"},
+  {c:"系统", k:["⌘","⌥","D"], d:"显示/隐藏 Dock"},
+  {c:"系统", k:["⌘","⌥","P"], d:"在 Dock 显示当前路径"},
+  // 窗口
+  {c:"窗口", k:["⌘","Tab"], d:"切换应用"},
+  {c:"窗口", k:["⌘","⇧","Tab"], d:"反向切换应用"},
+  {c:"窗口", k:["⌘","`"], d:"切换同一应用的窗口"},
+  {c:"窗口", k:["⌃","↑"], d:"Mission Control（所有窗口）"},
+  {c:"窗口", k:["⌃","↓"], d:"查看当前应用的所有窗口"},
+  {c:"窗口", k:["⌘","M"], d:"最小化到 Dock"},
+  {c:"窗口", k:["⌘","⌥","M"], d:"最小化所有窗口"},
+  {c:"窗口", k:["⌘","⌃","F"], d:"全屏切换"},
+  {c:"窗口", k:["⌘","⌥","←"], d:"窗口靠左半屏（需窗口管理工具）"},
+  // 文本编辑（Emacs 键位，全局通用）
+  {c:"文本", k:["⌃","A"], d:"光标移到行首"},
+  {c:"文本", k:["⌃","E"], d:"光标移到行尾"},
+  {c:"文本", k:["⌃","K"], d:"删除到行尾"},
+  {c:"文本", k:["⌃","U"], d:"删除整行 / 删到行首"},
+  {c:"文本", k:["⌃","W"], d:"删除前一个词"},
+  {c:"文本", k:["⌃","Y"], d:"粘贴（⌃K 删掉的内容）"},
+  {c:"文本", k:["⌃","P"], d:"上移一行"},
+  {c:"文本", k:["⌃","N"], d:"下移一行"},
+  {c:"文本", k:["⌃","B"], d:"左移一个字符"},
+  {c:"文本", k:["⌃","F"], d:"右移一个字符"},
+  {c:"文本", k:["⌃","D"], d:"删除后一个字符"},
+  {c:"文本", k:["⌃","T"], d:"交换相邻两个字符"},
+  {c:"文本", k:["⌘","←"], d:"光标跳到行首"},
+  {c:"文本", k:["⌘","→"], d:"光标跳到行尾"},
+  {c:"文本", k:["⌥","←"], d:"左移一个单词"},
+  {c:"文本", k:["⌥","→"], d:"右移一个单词"},
+  {c:"文本", k:["⌥","Delete"], d:"删除前一个单词"},
+  {c:"文本", k:["⌘","⇧","⌥","V"], d:"粘贴并匹配样式"},
+  // Finder
+  {c:"Finder", k:["⌘","⇧","N"], d:"新建文件夹"},
+  {c:"Finder", k:["⌘","⇧","G"], d:"前往文件夹（粘贴路径）"},
+  {c:"Finder", k:["⌘","⇧","."], d:"显示/隐藏 隐藏文件"},
+  {c:"Finder", k:["Space"], d:"快速查看（Quick Look）"},
+  {c:"Finder", k:["⌘","⌥","C"], d:"拷贝所选文件的路径"},
+  {c:"Finder", k:["⌘","⌥","V"], d:"剪切并粘贴（移动文件）"},
+  {c:"Finder", k:["⌘","D"], d:"复制所选文件"},
+  {c:"Finder", k:["⌘","Delete"], d:"移到废纸篓"},
+  {c:"Finder", k:["⌘","⇧","Delete"], d:"清空废纸篓"},
+  {c:"Finder", k:["⌘","↑"], d:"前往上一级目录"},
+  {c:"Finder", k:["⌘","↓"], d:"打开所选项目"},
+  {c:"Finder", k:["⌘","I"], d:"显示简介"},
+  {c:"Finder", k:["⌘","⌥","I"], d:"显示多个项目的简介"},
+  {c:"Finder", k:["⌘","1"], d:"图标视图"},
+  {c:"Finder", k:["⌘","2"], d:"列表视图"},
+  {c:"Finder", k:["⌘","3"], d:"分栏视图"},
+  {c:"Finder", k:["⌘","4"], d:"画廊视图"},
+  // 截图
+  {c:"截图", k:["⌘","⇧","3"], d:"截取整个屏幕"},
+  {c:"截图", k:["⌘","⇧","4"], d:"截取选定的区域"},
+  {c:"截图", k:["⌘","⇧","4","Space"], d:"截取某个窗口或菜单"},
+  {c:"截图", k:["⌘","⇧","5"], d:"打开截图 / 录屏工具面板"},
+  {c:"截图", k:["⌘","⇧","6"], d:"截取触控栏（Touch Bar）"},
+  // 终端
+  {c:"终端", k:["⌃","C"], d:"中断当前命令"},
+  {c:"终端", k:["⌃","D"], d:"结束输入 / 退出会话"},
+  {c:"终端", k:["⌃","Z"], d:"挂起当前进程"},
+  {c:"终端", k:["⌃","R"], d:"反向搜索历史命令"},
+  {c:"终端", k:["⌃","L"], d:"清屏（保留滚动）"},
+  {c:"终端", k:["⌘","K"], d:"彻底清空终端"},
+  {c:"终端", k:["⌘","T"], d:"新建标签页"},
+  {c:"终端", k:["⌘","D"], d:"分屏（iTerm2）"},
+  {c:"终端", k:["⌘","⇧","C"], d:"复制路径（iTerm2）"},
+  {c:"终端", k:["⌃","A"], d:"跳到命令行首"},
+  {c:"终端", k:["⌃","E"], d:"跳到命令行尾"},
+  {c:"终端", k:["⌃","U"], d:"清空整行"},
+  {c:"终端", k:["⌃","W"], d:"删除前一个词"},
+  {c:"终端", k:["⌘","."], d:"取消（Esc 效果）"},
+  // 编辑器 / 浏览器
+  {c:"编辑器", k:["⌘","P"], d:"快速跳转文件（VS Code）"},
+  {c:"编辑器", k:["⌘","⇧","P"], d:"命令面板（VS Code）"},
+  {c:"编辑器", k:["⌘","D"], d:"多选下一个相同词"},
+  {c:"编辑器", k:["⌘","/"], d:"注释 / 取消注释"},
+  {c:"编辑器", k:["⌥","↑"], d:"整行上移"},
+  {c:"编辑器", k:["⌥","↓"], d:"整行下移"},
+  {c:"编辑器", k:["⌘","⇧","K"], d:"删除整行"},
+  {c:"编辑器", k:["⌘","⌥","["], d:"代码块向左缩进"},
+  {c:"编辑器", k:["⌘","⌥","]"], d:"代码块向右缩进"},
+  {c:"编辑器", k:["⌘","1..9"], d:"切换浏览器 / 编辑器标签页"},
+  {c:"编辑器", k:["⌘","⇧","T"], d:"恢复刚关闭的标签页"},
+  {c:"编辑器", k:["⌘","L"], d:"地址栏（浏览器）"}
+];
+SHORTCUTS.forEach(function(s, i){ s.id = "k" + i; });
+
+/* ───────────── 内置静态库（命令片段） ───────────── */
+var SNIPPETS = [
+  {c:"brew", d:"查看所有服务状态", cmd:"brew services list"},
+  {c:"brew", d:"启动 / 停止 / 重启服务", cmd:"brew services start nginx  # 也可用 stop / restart"},
+  {c:"brew", d:"查看可更新的包", cmd:"brew outdated"},
+  {c:"brew", d:"更新全部包", cmd:"brew upgrade"},
+  {c:"brew", d:"清理旧版本与缓存", cmd:"brew cleanup -s && rm -rf $(brew --cache)"},
+  {c:"brew", d:"查看某个包的信息", cmd:"brew info nginx"},
+  {c:"brew", d:"列出已安装的顶层包", cmd:"brew leaves"},
+  {c:"brew", d:"检查 brew 环境是否正常", cmd:"brew doctor"},
+  {c:"服务", d:"重启 nginx", cmd:"brew services restart nginx"},
+  {c:"服务", d:"测试 nginx 配置是否正确", cmd:"nginx -t"},
+  {c:"服务", d:"平滑重载 nginx 配置", cmd:"nginx -s reload"},
+  {c:"服务", d:"进入 redis 命令行", cmd:"redis-cli"},
+  {c:"服务", d:"清空 redis 当前库（危险）", cmd:"redis-cli flushdb"},
+  {c:"服务", d:"登录 mysql", cmd:"mysql -u root -p"},
+  {c:"服务", d:"查看 php 版本与配置路径", cmd:"php -v && php --ini"},
+  {c:"服务", d:"重新加载 launchd 配置", cmd:"launchctl load -w ~/Library/LaunchAgents/homebrew.mxcl.nginx.plist"},
+  {c:"端口", d:"查看所有监听端口", cmd:"sudo lsof -nP -iTCP -sTCP:LISTEN"},
+  {c:"端口", d:"查看谁占用了 8080", cmd:"lsof -nP -iTCP:8080 | grep LISTEN"},
+  {c:"端口", d:"杀掉占用 8080 的进程", cmd:"lsof -ti:8080 | xargs kill -9"},
+  {c:"端口", d:"测试本地端口是否通", cmd:"nc -zv 127.0.0.1 6379"},
+  {c:"文件", d:"递归查找文件名", cmd:"find . -name '*.php' -not -path './vendor/*'"},
+  {c:"文件", d:"快速搜索文件内容", cmd:"grep -rn '关键词' --include='*.php' ."},
+  {c:"文件", d:"查看目录大小（只列一层）", cmd:"du -sh ./* | sort -hr | head -20"},
+  {c:"文件", d:"把文件移进废纸篓而不是直接删", cmd:"trash 文件名"},
+  {c:"文件", d:"批量修改文件编码为 UTF-8", cmd:"iconv -f GBK -t UTF-8 file.txt > file.utf8.txt"},
+  {c:"系统", d:"显示隐藏文件（需重启 Finder）", cmd:"defaults write com.apple.finder AppleShowAllFiles -bool true && killall Finder"},
+  {c:"系统", d:"隐藏桌面所有图标", cmd:"defaults write com.apple.finder CreateDesktop -bool false && killall Finder"},
+  {c:"系统", d:"修改截图默认保存位置", cmd:"defaults write com.apple.screencapture location ~/Pictures && killall SystemUIServer"},
+  {c:"系统", d:"重启 Finder", cmd:"killall Finder"},
+  {c:"系统", d:"重建 Spotlight 索引", cmd:"sudo mdutil -E /"},
+  {c:"系统", d:"查看磁盘空间", cmd:"df -h"},
+  {c:"系统", d:"查看内存占用前 10 的进程", cmd:"ps aux | sort -rnk4 | head -10"},
+  {c:"系统", d:"查看开机启动项", cmd:"osascript -e 'tell application \"System Events\" to get the name of every login item'"},
+  {c:"git", d:"查看简洁日志图", cmd:"git log --oneline --graph --decorate --all -20"},
+  {c:"git", d:"撤销上次提交但保留改动", cmd:"git reset --soft HEAD^"},
+  {c:"git", d:"强制同步远程分支（丢弃本地）", cmd:"git fetch origin && git reset --hard origin/$(git branch --show-current)"},
+  {c:"git", d:"清理已合并的本地分支", cmd:"git branch --merged | grep -v '\\*\\|main\\|master' | xargs -n 1 git branch -d"},
+  {c:"git", d:"临时存放当前改动", cmd:"git stash -u && git stash list"}
+];
+
+/* ───────────── 预置直达条目（本机实测路径） ───────────── */
+var BUILTIN_LINKS = [
+  {t:"file", n:"zsh 配置", p:"~/.zshrc", g:"conf", ic:"term"},
+  {t:"file", n:"git 全局配置", p:"~/.gitconfig", g:"conf", ic:"code"},
+  {t:"file", n:"nginx 主配置", p:"/opt/homebrew/etc/nginx/nginx.conf", g:"conf", ic:"server"},
+  {t:"dir",  n:"nginx 站点配置", p:"/opt/homebrew/etc/nginx/servers", g:"conf", ic:"folder"},
+  {t:"file", n:"redis 配置", p:"/opt/homebrew/etc/redis.conf", g:"conf", ic:"server"},
+  {t:"file", n:"mysql 配置", p:"/opt/homebrew/etc/my.cnf", g:"conf", ic:"server"},
+  {t:"file", n:"php.ini", p:"/opt/homebrew/etc/php/8.5/php.ini", g:"conf", ic:"code"},
+  {t:"dir",  n:"launchd 自启项", p:"~/Library/LaunchAgents", g:"conf", ic:"bolt"},
+  {t:"dir",  n:"brew 配置总目录", p:"/opt/homebrew/etc", g:"dir", ic:"folder"},
+  {t:"dir",  n:"项目目录 Sites", p:"~/Sites", g:"dir", ic:"code"},
+  {t:"dir",  n:"下载目录", p:"~/Downloads", g:"dir", ic:"down"},
+  {t:"dir",  n:"用户主目录", p:"~", g:"dir", ic:"home"}
+];
+
+/* ───────────── 内置静态库（每日一技） ───────────── */
+var TIPS = [
+  {t:"三指轻点查词", d:"光标停在任意单词上，三指轻点触控板，直接弹出词典释义。不用打开浏览器翻译，系统词典自带中英日法德等。"},
+  {t:"Option + 点击 WiFi 图标", d:"按住 Option 再点菜单栏的 WiFi 图标，能看到当前信道的信号强度、噪底、信道号和收发速率——调路由器位置时特别有用。"},
+  {t:"快速查看直接预览一切", d:"Finder 里选中文件按空格，不打开应用就能预览。空格预览 PDF、视频、表格；配合方向键还能在文件间连续切换预览。"},
+  {t:"窗口分屏不用装工具", d:"把窗口左上角绿色按钮「长按」，会弹出分屏选项；macOS 15 还可以直接把窗口拖到屏幕边缘自动平铺。两个窗口各占一半，原生就够。"},
+  {t:"Spotlight 就是启动器", d:"⌘ + 空格不只搜文件：输入 128*46 直接算数，输入单词查释义，输入 app 名字回车即启动。大部分场景不需要装第三方启动器。"},
+  {t:"强制退出卡死应用", d:"⌘ + ⌥ + Esc 弹出强制退出面板；或者 ⌘ + ⌥ + ⇧ + Esc 长按 3 秒，直接强退当前最前面的应用。"},
+  {t:"截图其实是个套件", d:"⇧ + ⌘ + 5 打开截图面板：全屏、窗口、区域截图和录屏都在这。⇧ + ⌘ + 4 后按空格可以精确截取某个窗口，还自动带阴影。"},
+  {t:"录屏时只录干净区域", d:"在 ⇧ + ⌘ + 5 的「录制选定部分」里框选区域再录，桌面图标和杂乱窗口都不会入镜。"},
+  {t:"拖移窗口时按住 ⌃ 慢速精调", d:"拖动窗口的同时按住 ⌃ 键，窗口移动会变成慢动作，可以精确对齐屏幕边缘。"},
+  {t:"Finder 里直接剪切移动文件", d:"先 ⌘ + C 复制，再 ⌘ + ⌥ + V 粘贴，就是把文件「剪切」到目标位置，不用拖拽。"},
+  {t:"预览 app 可以给 PDF 签名", d:"用「预览」打开 PDF，工具栏的标记工具里有「签名」——触控板手写或摄像头拍白纸签名都行，签合同不用打印。"},
+  {t:"文本替代自动纠错缩写", d:"系统设置 > 键盘 > 文本替换：把「my@」设为你的常用邮箱，任何 app 里输入缩写自动展开成全文。"},
+  {t:"快捷键秒开偏好设置某一项", d:"系统设置支持 ⌘ + L 聚焦搜索栏，输入「显示器」回车直达面板，不用在侧边栏里翻。"},
+  {t:"Spotlight 当计算器 + 换算器", d:"输入「100usd」直接显示人民币换算，输入「1tb=」显示 GB 换算，输入「72f」转摄氏度。结果可以直接 ⌘ + C 复制。"},
+  {t:"选中即朗读", d:"系统设置 > 辅助功能 > 朗读内容：开启「按下按键朗读所选文本」，任意文本按快捷键就能听，长文校对神器。"},
+  {t:"快速隐藏桌面杂乱图标", d:"Finder 设置里没有这个开关，但终端一行命令就能搞定——见命令片段库「隐藏桌面所有图标」。开会共享屏幕前用。"},
+  {t:"触控板三指拖移", d:"系统设置 > 辅助功能 > 触控板选项 > 拖移方式选「三指拖移」。窗口拖动、选中文字都变成三指一捏一拖，用过回不去。"},
+  {t:"Spotlight 搜索文件内文字", d:"Spotlight 不止搜文件名：输入正文里出现的关键词也能找到文件。配合 ⌘ + 回车直接打开文件所在文件夹。"},
+  {t:"Finder 路径栏常驻", d:"Finder 里 ⇧ + ⌘ + P 显示路径栏，拖到窗口底部常驻。双击路径栏任意一层直接跳转，找文件不再迷路。"},
+  {t:"批量重命名", d:"Finder 里多选文件后右键「重新命名」：替换文字、加序号、改格式一次搞定，不用装批量改名工具。"},
+  {t:"屏幕保护当效率工具", d:"系统设置 > 锁屏：把「启动屏幕保护」设为热点角（桌面与程序坞 > 触发角），离开座位鼠标一甩就锁屏。"},
+  {t:"Quick Look 配合方向键翻页预览", d:"空格预览第一个文件后，直接按 ↑↓ 在列表里切换预览、→← 在多页 PDF 里翻页。快速挑照片和扫描件最快的方式。"},
+  {t:"AppleScript 不用学也能用", d:"命令片段库里的 osascript 命令可以直接复用，比如列出所有登录启动项——拷贝粘贴就能跑，不用先学脚本。"},
+  {t:"输入特殊字符的隐藏键盘", d:"系统设置 > 键盘 > 输入法，添加「Unicode 十六进制输入法」后，按住 Option 输入十六进制码就能打出任意 Unicode 字符。"},
+  {t:"预览可直接裁剪 PDF 页面", d:"「预览」打开 PDF → 显示标记工具栏 → 矩形选择区域 → ⌘ + K 裁剪。删空白页则缩略图里选中页面按删除。"},
+  {t:"T 一步在 Finder 和终端之间穿梭", d:"终端里输入 cd 后，直接把 Finder 里的文件夹拖进终端窗口，路径自动补全，反向则从终端拖文件到 Finder。"},
+  {t:"Activity Monitor 看 CPU 的正确姿势", d:"活动监视器 > 显示 > Dock 图标 > 选「CPU 使用率」，Dock 图标变成实时柱状图，可以替代菜单栏监控小工具。"},
+  {t:"废纸篓也有「放回原处」", d:"右键废纸篓里的文件选「放回原处」，文件回到删除前的完整路径。Finder 误删不慌。"},
+  {t:"批注支持 Apple Pencil 触控板手写", d:"任何支持标记的文件里，触控板「手写识别」可以当迷你手写板写中文——系统设置 > 触控板 > 手写。"},
+  {t:"键盘当鼠标用", d:"系统设置 > 键盘 > 快捷键里开启「全键盘控制」（或 ⌃ + F7），Tab 在所有控件间移动，空格确认，完全脱离鼠标操作对话框。"},
+  {t:"Spotlight 直接找表情符号", d:"⌃ + ⌘ + 空格调出字符检视器，搜索「箭头」「勾」等关键字插入任意符号，不用背 Unicode。"},
+  {t:"自动化：快捷指令挂进右键菜单", d:"「快捷指令」app 建好流程后，在设置里勾选「用作快速操作 > Finder」，它就出现在 Finder 右键菜单里——这就是原生版「右键小工具」。"},
+  {t:"AirDrop 不只传照片", d:"Finder 侧边栏 AirDrop 拖任何文件给附近 Mac / iPhone，不用微信传文件助手，不限大小、不压缩画质。"},
+  {t:"双指轻点两下 = 智能缩放", d:"浏览网页时双指轻点两下，自动放大到正文栏宽度，再点两下还原。长文章阅读利器。"}
+];
+
+/* ───────────── 内置静态库（原生替代方案：不装软件就能办到） ───────────── */
+var NATIVE = [
+  {n:"右键新建文件", was:"以前要装 Finder 增强工具",
+   d:"macOS 原生没有「右键新建文件」，但用自带的 Automator 做一次快速操作，右键菜单里就永久有了，零安装、零常驻。",
+   steps:["打开「Automator」（聚焦搜索输入 Automator）→ 新建 → 选「快速操作」",
+          "顶部设置：工作流程接收当前「文件或文件夹」位于「Finder.app」",
+          "左侧搜「运行 Shell 脚本」，拖到右边；「传递输入」选「作为自变量」",
+          "粘贴脚本（下方可复制）：在当前文件夹创建「新建文本.md」",
+          "⌘ + S 保存，命名为「新建文件」——现在 Finder 右键 > 快速操作里就有了",
+          "想加到右键一级菜单：Finder 右键任意文件 > 快速操作 > 右键「新建文件」选「添加到工具栏/个人收藏」"],
+   cmd:"for f in \"$@\"; do touch \"$f/新建文本.md\"; done"},
+  {n:"窗口左右分屏", was:"以前要装窗口管理器",
+   d:"绿点长按选分屏；macOS 15 起把窗口拖到屏幕左右边缘出现半透明高亮直接松手就是半屏。⌃ + 方向键在分屏间切换焦点。",
+   steps:[], cmd:""},
+  {n:"应用启动与搜索", was:"以前要装第三方启动器",
+   d:"⌘ + 空格 Spotlight：启动 app、算数、汇率换算、查词、搜文件正文，一个键全覆盖。",
+   steps:[], cmd:""},
+  {n:"剪贴板管理", was:"以前要装剪贴板历史工具",
+   d:"macOS 没有原生剪贴板历史（这个真没有，不骗你）。但常用的「粘贴为纯文本」是 ⌘ + ⌥ + ⇧ + V；「剪切移动文件」是 ⌘ + C 后 ⌘ + ⌥ + V。跨设备复制粘贴靠通用剪贴板（同一 Apple ID 下的 iPhone 和 Mac 直接互贴）。"},
+  {n:"系统状态监控", was:"以前要装菜单栏监控工具",
+   d:"活动监视器自带 Dock 图标模式：显示 > Dock 图标 > CPU 使用率 / 内存压力 / 磁盘活动，Dock 就是仪表盘。",
+   steps:[], cmd:""},
+  {n:"磁盘空间清理", was:"以前要装清理软件",
+   d:"苹果菜单 > 关于本机 > 储存空间 > 设置，自带「优化储存」「清空废纸篓」「检查大型文件」。再加上本工作台的「磁盘清理」模块处理缓存，基本不需要第三方清理软件。",
+   steps:[], cmd:""},
+  {n:"彻底卸载应用", was:"以前要装卸载器",
+   d:"大多数应用把 .app 拖进废纸篓即卸载；残留配置在 ~/Library/Preferences 和 ~/Library/Application Support 里同名文件夹。系统设置 > 储存空间 > 应用程序 也能看体积排序逐个删。"},
+  {n:"菜单栏图标整理", was:"以前要装菜单栏管理工具",
+   d:"系统设置 > 控制中心：每个图标都能单独设「在菜单栏中显示 / 不显示」。按住 ⌘ 拖动图标可以直接排序、拖出菜单栏移除。"},
+  {n:"护眼提醒", was:"以前要装护眼/休息提醒工具",
+   d:"系统设置 > 辅助功能 > 显示：开启「色调调整」（暖屏）和「减弱白点」。定时休息提醒可以用「专注模式」+ 定时，或时钟 app 的睡眠专注。"},
+  {n:"保持唤醒（演示不灭屏）", was:"以前要装caffeine类工具",
+   d:"终端一行命令：caffeinate -t 3600 让 Mac 一小时内不睡眠（Ctrl+C 取消）。系统自带命令，不需要装任何软件。",
+   steps:[], cmd:"caffeinate -t 3600"}
+];
+
+/* 线上版（部署到资料库的链接）无法访问 127.0.0.1 的 bridge，
+   此时只是个只读知识库，文案要跟「本机 bridge 没启动」区分开，避免误导。 */
+var IS_REMOTE = !(location.hostname === "127.0.0.1" || location.hostname === "localhost");
+
+/* ───────────── 状态 ───────────── */
+var state = {
+  tab: "svc",
+  online: false,
+  info: null,
+  services: [],
+  ports: [],
+  outdated: [],
+  disk: null,
+  loading: false,
+  keyCat: "全部",
+  keyQ: "",
+  favOnly: false,
+  cmdCat: "全部",
+  cmdQ: "",
+  data: null,
+  clean: { scanning: false, items: null, level: 2, checked: {}, running: false, lastResult: null },
+  tipIdx: 0
+};
+
+/* ───────────── 数据层 ───────────── */
+function defaultData(){
+  return {
+    v: 1,
+    myLinks: [],
+    mySnips: [],
+    favs: [],
+    lastExport: ""
+  };
+}
+function loadData(){
+  try{
+    var raw = localStorage.getItem(LS_KEY);
+    if (!raw) return defaultData();
+    var d = JSON.parse(raw);
+    if (!d || typeof d !== "object") return defaultData();
+    var base = defaultData();
+    for (var k in base){ if (!(k in d)) d[k] = base[k]; }
+    if (!Array.isArray(d.myLinks)) d.myLinks = [];
+    if (!Array.isArray(d.mySnips)) d.mySnips = [];
+    if (!Array.isArray(d.favs)) d.favs = [];
+    return d;
+  }catch(e){ return defaultData(); }
+}
+function saveData(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(state.data)); }
+  catch(e){ toast("本地存储写入失败，改动可能不会保留", "err"); }
+}
+
+/* ───────────── 工具函数 ───────────── */
+function $(id){ return document.getElementById(id); }
+function esc(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+function expandPath(p){
+  if (!p) return "";
+  var home = (state.info && state.info.home) ? state.info.home : "";
+  if (p === "~") return home || p;
+  if (p.indexOf("~/") === 0) return home ? home + p.slice(1) : p;
+  return p;
+}
+function dirOf(p){
+  var i = String(p).lastIndexOf("/");
+  return i > 0 ? p.slice(0, i) : p;
+}
+var _tt = null;
+function toast(msg, kind){
+  var t = $("toast");
+  t.textContent = msg;
+  t.className = "toast on" + (kind ? " " + kind : "");
+  clearTimeout(_tt);
+  _tt = setTimeout(function(){ t.className = "toast"; }, 2400);
+}
+function copyText(txt){
+  function fallback(){
+    var ta = document.createElement("textarea");
+    ta.value = txt;
+    ta.style.cssText = "position:fixed;left:-9999px;top:0";
+    document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand("copy"); }catch(e){}
+    document.body.removeChild(ta);
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).catch(fallback);
+  } else { fallback(); }
+  toast("已复制到剪贴板", "ok");
+}
+var ICONS = {
+  home:'<path d="M3 10l9-7 9 7v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke-linejoin="round"/><path d="M9 22V12h6v10"/>',
+  folder:'<path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>',
+  code:'<path d="M8 6l-5 6 5 6M16 6l5 6-5 6" stroke-linecap="round" stroke-linejoin="round"/>',
+  term:'<rect x="2" y="4" width="20" height="16" rx="2.5"/><path d="M6 9l3 3-3 3M12 15h6" stroke-linecap="round" stroke-linejoin="round"/>',
+  server:'<rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01" stroke-linecap="round"/>',
+  bolt:'<path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" stroke-linejoin="round"/>',
+  down:'<path d="M12 3v12M7 11l5 5 5-5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20h16" stroke-linecap="round"/>',
+  file:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke-linejoin="round"/><path d="M14 2v6h6"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 01-2.8 2.8l-.1-.1a1.7 1.7 0 00-2.9 1.2V21a2 2 0 01-4 0v-.1A1.7 1.7 0 007 19.4a1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 01-2.8-2.8l.1-.1A1.7 1.7 0 003 15a2 2 0 010-4 1.7 1.7 0 001.2-2.9l-.1-.1a2 2 0 012.8-2.8l.1.1a1.7 1.7 0 001.9.3H9a1.7 1.7 0 001-1.5V3a2 2 0 014 0v.1a1.7 1.7 0 002.9 1.2l.1-.1a2 2 0 012.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.5 1H21a2 2 0 010 4h-.1a1.7 1.7 0 00-1.5 1z"/>',
+  plus:'<path d="M12 5v14M5 12h14" stroke-linecap="round"/>',
+  copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>',
+  eye:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+  play:'<path d="M6 4l14 8-14 8z" stroke-linejoin="round"/>',
+  stop:'<rect x="6" y="6" width="12" height="12" rx="2"/>',
+  restart:'<path d="M21 12a9 9 0 11-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
+  trash:'<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" stroke-linecap="round" stroke-linejoin="round"/>',
+  star:'<path d="M12 3l2.6 5.5 6 .9-4.3 4.3 1 6-5.3-2.8L6.7 19.7l1-6L3.4 9.4l6-.9L12 3z" stroke-linejoin="round"/>'
+};
+function icon(name, size){
+  var p = ICONS[name] || ICONS.file;
+  return '<svg width="'+(size||16)+'" height="'+(size||16)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+p+'</svg>';
+}
+
+/* ───────────── 网络层（唯一会改 state 后统一刷新的地方） ───────────── */
+function bridgeGet(path, timeout){
+  timeout = timeout || 12000;
+  return new Promise(function(resolve){
+    var done = false;
+    var ctl = null;
+    if (typeof AbortController !== "undefined"){
+      ctl = new AbortController();
+      setTimeout(function(){ if(!done){ try{ctl.abort();}catch(e){} } }, timeout);
+    } else {
+      setTimeout(function(){ if(!done){ done = true; resolve(null); } }, timeout);
+    }
+    fetch(BRIDGE + path, ctl ? {signal: ctl.signal} : {})
+      .then(function(r){ return r.json(); })
+      .then(function(j){ if(!done){ done = true; resolve(j); } })
+      .catch(function(){ if(!done){ done = true; resolve(null); } });
+  });
+}
+
+async function checkPing(){
+  var r = await bridgeGet("/api/ping", 3000);
+  state.online = !!(r && r.ok);
+  state.info = state.online ? r : null;
+  return state.online;
+}
+
+async function loadServices(){
+  if (!state.online){ state.services = []; state.ports = []; return; }
+  state.loading = true;
+  refreshAll();
+  var r = await bridgeGet("/api/services", 25000);
+  state.loading = false;
+  if (r && r.ok){
+    state.services = r.services || [];
+    state.ports = r.ports || [];
+  } else {
+    state.online = false;   // 请求过程中掉线
+  }
+  refreshAll();
+}
+
+/**
+ * 附加信息加载。
+ * brew outdated 可能要几十秒（要联网比对版本），绝不能让它阻塞磁盘等快接口，
+ * 所以这里两个请求并行发起，谁先回来就先渲染谁。
+ */
+function loadExtras(){
+  if (!state.online) return;
+  bridgeGet("/api/disk", 8000).then(function(d){
+    if (d && d.ok){ state.disk = d.disk; refreshAll(); }
+  });
+  bridgeGet("/api/outdated", 120000).then(function(o){
+    if (o && o.ok){ state.outdated = o.outdated || []; refreshAll(); }
+  });
+}
+
+/**
+ * 统一的本机操作入口。
+ * 在线 → 调 bridge；离线 → 退化为「复制命令」。
+ */
+async function act(path, opts){
+  opts = opts || {};
+  var p = expandPath(opts.path || "");
+  var url = path + (p ? "?path=" + encodeURIComponent(p) : "");
+  if (path === "/api/newfile"){
+    url = "/api/newfile?dir=" + encodeURIComponent(expandPath(opts.dir || "")) + "&name=" + encodeURIComponent(opts.name || "");
+  }
+  if (!state.online){
+    if (opts.copy){ copyText(opts.copy); }
+    else { toast("离线模式：本机操作不可用", "err"); }
+    return false;
+  }
+  var r = await bridgeGet(url, opts.timeout || 20000);
+  if (r && r.ok){ if (opts.okMsg) toast(opts.okMsg, "ok"); return true; }
+  toast((r && r.err) ? r.err : "操作失败", "err");
+  return false;
+}
+
+async function serviceAct(name, action){
+  if (!state.online){
+    copyText("brew services " + action + " " + name);
+    return;
+  }
+  toast(action === "start" ? "正在启动 " + name + "…" : (action === "stop" ? "正在停止 " + name + "…" : "正在重启 " + name + "…"));
+  var r = await bridgeGet("/api/service/act?act=" + action + "&name=" + encodeURIComponent(name), 60000);
+  if (r && r.ok){ toast(name + " 已" + (action === "start" ? "启动" : action === "stop" ? "停止" : "重启"), "ok"); }
+  else { toast((r && r.err) ? r.err : name + " 操作失败", "err"); }
+  await loadServices();
+}
+
+async function killPort(pid){
+  if (!state.online){ copyText("kill -9 " + pid); return; }
+  if (!(await askConfirm("结束进程", "确定结束进程 <b>" + esc(pid) + "</b> 吗？<br>误杀系统进程可能导致异常，请确认你认识它。", "结束进程", "err"))) return;
+  var r = await bridgeGet("/api/kill?pid=" + encodeURIComponent(pid), 15000);
+  if (r && r.ok){ toast("已结束进程 " + pid, "ok"); } else { toast((r && r.err) ? r.err : "结束失败", "err"); }
+  await loadServices();
+}
+
+/* ───────────── 磁盘清理（业务层：改 state.clean 后统一刷新） ───────────── */
+function cleanSelKeys(){
+  return (state.clean.items || []).filter(function(it){
+    return it.exists && state.clean.checked[it.key];
+  });
+}
+function applyCleanLevel(){
+  state.clean.checked = {};
+  (state.clean.items || []).forEach(function(it){
+    if (it.exists && it.risk <= state.clean.level) state.clean.checked[it.key] = true;
+  });
+}
+async function scanClean(){
+  if (!state.online){
+    toast(IS_REMOTE ? "线上只读版无法扫描本机" : "离线模式：请先启动 bridge", "err");
+    return;
+  }
+  state.clean.scanning = true;
+  refreshAll();
+  var r = await bridgeGet("/api/clean/scan", 180000);
+  state.clean.scanning = false;
+  if (r && r.ok){
+    state.clean.items = r.items || [];
+    applyCleanLevel();
+  } else {
+    state.clean.items = null;
+    toast((r && r.err) ? r.err : "扫描失败", "err");
+  }
+  refreshAll();
+}
+function showCleanConfirm(){
+  var sel = cleanSelKeys();
+  if (!sel.length){ toast("没有勾选任何项", "err"); return; }
+  var tot = 0;
+  var rows = sel.map(function(it){ tot += it.size; return it; }).map(function(it){
+    return '<div class="cl-item" style="margin-bottom:6px"><div class="info">' +
+      '<div class="nm">' + esc(it.label) + '<span class="risk r' + it.risk + '">' +
+      ({1:"安全",2:"标准",3:"谨慎"})[it.risk] + "</span></div>" +
+      '<div class="pth">' + esc(it.path) + "</div></div>" +
+      '<div class="sz">' + fmtSize(it.size) + "</div></div>";
+  }).join("");
+  openModal("确认清理",
+    '<div class="note" style="border-color:rgba(255,59,48,.35);background:rgba(255,59,48,.06)">' +
+    "<b>删除后不可恢复。</b>这些目录都是缓存类数据，但清理后相关应用首次启动会重新生成缓存。" +
+    (state.clean.checked.ios_backup ? '<br><b style="color:var(--err)">⚠ 你勾选了「iOS 设备备份」，其中可能含微信聊天记录，没有 iCloud 备份的话千万别删！</b>' : "") +
+    "</div>" + rows +
+    '<div class="cl-sum" style="margin-top:10px"><div class="big">约 ' + fmtSize(tot) + '</div><div class="sub">预估释放空间（近似值）</div></div>',
+    '<button class="btn" data-act="closeModal">再想想</button>' +
+    '<button class="btn err" data-act="cleanConfirm">确认清理</button>');
+}
+async function runClean(){
+  var keys = cleanSelKeys().map(function(it){ return it.key; });
+  if (!keys.length){ toast("没有勾选任何项", "err"); return; }
+  state.clean.running = true;
+  refreshAll();
+  var r = await bridgeGet("/api/clean/execute?keys=" + encodeURIComponent(keys.join(",")), 300000);
+  state.clean.running = false;
+  if (r && r.ok){
+    var results = r.results || [];
+    var okN = results.filter(function(x){ return !x.err || x.freed > 0; }).length;
+    var fails = [];
+    results.forEach(function(x){
+      (x.fails || []).forEach(function(f){
+        fails.push({ item: x.key, name: f.name, reason: f.reason });
+      });
+    });
+    state.clean.lastResult = {freed: r.freed_total || 0, n: okN, total: results.length, fails: fails};
+    if (fails.length){
+      toast("清理完成，释放约 " + fmtSize(r.freed_total || 0) + "；" + fails.length + " 个条目未能删除，详情见列表", "err");
+    } else {
+      toast("清理完成，释放约 " + fmtSize(r.freed_total || 0), "ok");
+    }
+    scanClean();          // 重新扫描，刷新各项大小显示
+  } else {
+    toast((r && r.err) ? r.err : "清理失败", "err");
+    refreshAll();
+  }
+}
+
+/* ───────────── 计算层（只读 state，产出渲染所需数据） ───────────── */
+function computeAlerts(){
+  var out = [];
+  if (!state.online){
+    out.push({
+      lv: "warn",
+      t1: IS_REMOTE ? "线上只读版：快捷查询可用" : "离线模式：本机 bridge 未连接",
+      t2: IS_REMOTE
+        ? "这个链接部署在线上，浏览器不允许它访问你本机的服务。服务管理、一键直达请在本机运行 bridge 后打开 http://127.0.0.1:8899"
+        : "实时服务状态、一键启停、开终端暂不可用；快捷键与命令片段可正常查阅。",
+      btn: IS_REMOTE ? {label:"怎么在本机用", fn:"showHelp"} : {label:"怎么启动", fn:"showHelp"}
+    });
+    return out;
+  }
+  state.services.forEach(function(s){
+    if (s.running && (!s.ports || s.ports.length === 0)){
+      out.push({
+        lv: "warn",
+        t1: s.name + " 已启动但没检测到监听端口",
+        t2: "可能启动失败，或该服务本就不监听端口",
+        btn: {label:"重启", fn:"svcRestart", arg:s.name}
+      });
+    }
+  });
+  if (state.outdated && state.outdated.length){
+    out.push({
+      lv: "warn",
+      t1: "有 " + state.outdated.length + " 个包可以更新",
+      t2: state.outdated.slice(0, 6).join("、") + (state.outdated.length > 6 ? " …" : ""),
+      btn: {label:"复制更新命令", fn:"copyUpgrade"}
+    });
+  }
+  if (state.disk && state.disk.pct){
+    var pct = parseInt(state.disk.pct, 10);
+    if (pct >= 88){
+      out.push({
+        lv: "err",
+        t1: "磁盘空间紧张：已用 " + state.disk.pct,
+        t2: "剩余 " + state.disk.avail + " / 共 " + state.disk.total,
+        btn: {label:"复制清理命令", fn:"copyCleanup"}
+      });
+    }
+  }
+  return out;
+}
+function filteredShortcuts(){
+  var q = state.keyQ.trim().toLowerCase();
+  var favs = state.data.favs || [];
+  return SHORTCUTS.filter(function(s){
+    if (state.favOnly && favs.indexOf(s.id) < 0) return false;
+    if (state.keyCat !== "全部" && s.c !== state.keyCat) return false;
+    if (!q) return true;
+    return (s.d + " " + s.k.join(" ") + " " + s.c).toLowerCase().indexOf(q) >= 0;
+  });
+}
+function allSnippets(){
+  return SNIPPETS.concat(state.data.mySnips || []);
+}
+function filteredSnippets(){
+  var q = state.cmdQ.trim().toLowerCase();
+  return allSnippets().filter(function(s){
+    if (state.cmdCat !== "全部" && s.c !== state.cmdCat) return false;
+    if (!q) return true;
+    return (s.d + " " + s.cmd).toLowerCase().indexOf(q) >= 0;
+  });
+}
+function catList(items){
+  var m = {};
+  items.forEach(function(i){ m[i.c] = 1; });
+  return Object.keys(m);
+}
+
+/* ───────────── 渲染层（各函数互不调用） ───────────── */
+function renderConn(){
+  var el = $("conn");
+  // 只读/离线状态下批量操作按钮没有意义，直接隐藏，避免误导
+  var svcBtns = !state.online;
+  $("btnAllStart").style.display = svcBtns ? "none" : "";
+  $("btnAllStop").style.display  = svcBtns ? "none" : "";
+  if (state.online){
+    el.className = "conn on";
+    el.innerHTML = '<span class="dot"></span><span class="lb">bridge 已连接</span>';
+    var i = state.info || {};
+    $("hostLine").textContent = (i.host ? i.host.replace(/\.local$|\.lan$/,"") : "本机") +
+      " · macOS " + (i.macos || "") + " · 终端 " + (i.terminal || "Terminal");
+  } else {
+    el.className = "conn off";
+    el.innerHTML = '<span class="dot"></span><span class="lb">' + (IS_REMOTE ? "线上只读版" : "离线模式") + "</span>";
+    $("hostLine").textContent = IS_REMOTE ? "线上版 · 仅可查阅" : "离线模式 · 仅可查阅";
+  }
+}
+
+function renderTabs(){
+  var defs = [
+    {id:"svc",   name:"服务控制台", ic:"server"},
+    {id:"go",    name:"一键直达",   ic:"bolt"},
+    {id:"clean", name:"磁盘清理",   ic:"trash"},
+    {id:"key",   name:"快捷键",     ic:"term"},
+    {id:"cmd",   name:"命令片段",   ic:"code"},
+    {id:"tips",  name:"小技巧",     ic:"star"}
+  ];
+  var alertN = state.online ? computeAlerts().filter(function(a){ return a.lv === "err"; }).length : 0;
+
+  $("tabs").innerHTML = defs.map(function(t){
+    var n = "";
+    if (t.id === "svc" && state.services.length) n = '<span class="n">' + state.services.length + "</span>";
+    if (t.id === "cmd") n = '<span class="n">' + allSnippets().length + "</span>";
+    return '<button class="tab' + (state.tab === t.id ? " on" : "") + '" data-tab="' + t.id + '">' +
+      icon(t.ic, 15) + '<span>' + t.name + "</span>" + n + "</button>";
+  }).join("");
+
+  $("mtabs").innerHTML = defs.map(function(t){
+    var dg = (t.id === "svc" && alertN) ? '<span class="dg">' + alertN + "</span>" : "";
+    return '<button class="mtab' + (state.tab === t.id ? " on" : "") + '" data-tab="' + t.id + '">' +
+      '<span class="ic">' + icon(t.ic, 20) + dg + "</span><span>" + t.name.replace("控制台","") + "</span></button>";
+  }).join("");
+
+  defs.forEach(function(t){
+    var v = $("view-" + t.id);
+    if (v) v.className = "view" + (state.tab === t.id ? " on" : "");
+  });
+}
+
+function renderAlerts(){
+  var list = computeAlerts();
+  var box = $("alertsBox");
+  if (!list.length){
+    box.hidden = true;   // 一切正常时整块隐藏，概览卡自动占满整行
+    return;
+  }
+  box.hidden = false;
+  var errN = list.filter(function(a){ return a.lv === "err"; }).length;
+  var h = '<div class="alerts-h' + (errN ? "" : " calm") + '">' +
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+    '<path d="M12 9v4M12 17h.01" stroke-linecap="round"/>' +
+    '<path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>' +
+    "<h2>需要注意</h2>" +
+    '<span class="cnt">' + (errN ? errN + " 项待处理" : list.length + " 项提醒") + "</span></div>" +
+    list.map(function(a){
+      var b = "";
+      if (a.btn){
+        var cls = a.lv === "err" ? "btn sm err" : "btn sm warn";
+        b = '<button class="' + cls + '" data-act="' + a.btn.fn + '"' +
+            (a.btn.arg ? ' data-arg="' + esc(a.btn.arg) + '"' : "") + ">" + esc(a.btn.label) + "</button>";
+      }
+      return '<div class="alert lv-' + a.lv + '"><div class="bar"></div>' +
+        '<div class="tx"><div class="t1">' + esc(a.t1) + '</div><div class="t2">' + esc(a.t2) + "</div></div>" +
+        '<div class="ac">' + b + "</div></div>";
+    }).join("");
+  box.innerHTML = h;
+}
+
+function renderOverview(){
+  var box = $("ovCard");
+  if (!state.online || !state.disk){
+    box.hidden = true;
+    return;
+  }
+  box.hidden = false;
+  var d = state.disk;
+  var pct = parseInt((d.pct || "0").replace("%",""), 10) || 0;
+  var col = pct >= 88 ? "#ff453a" : (pct >= 70 ? "#ff9f0a" : "#34c759");
+  var C = 2 * Math.PI * 46;
+  var off = C * (1 - pct / 100);
+  $("diskRing").innerHTML =
+    '<svg width="132" height="132" viewBox="0 0 120 120">' +
+      '<circle cx="60" cy="60" r="46" fill="none" stroke="var(--seg)" stroke-width="11"/>' +
+      '<circle cx="60" cy="60" r="46" fill="none" stroke="' + col + '" stroke-width="11" stroke-linecap="round" ' +
+      'stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '" transform="rotate(-90 60 60)"/>' +
+      '<text x="60" y="56" text-anchor="middle" fill="var(--tx)" font-size="21" font-weight="650">' + pct + '%</text>' +
+      '<text x="60" y="74" text-anchor="middle" fill="var(--tx3)" font-size="11">磁盘已用</text>' +
+    "</svg>";
+
+  var run = state.services.filter(function(s){ return s.running; }).length;
+  var stop = state.services.length - run;
+  var stat = [
+    {k:"运行中", v:run, cls:"ok"},
+    {k:"已停止", v:stop, cls: stop ? "err" : ""},
+    {k:"监听端口", v:state.ports.length, cls:"pri"},
+    {k:"可更新包", v:state.outdated.length, cls: state.outdated.length ? "err" : ""},
+    {k:"可用空间", v:d.avail || "-", cls:""},
+    {k:"磁盘总量", v:d.total || "-", cls:""}
+  ];
+  $("ovStats").innerHTML = stat.map(function(s){
+    return '<div class="ov-s"><div class="v ' + s.cls + '">' + esc(s.v) + '</div><div class="k">' + esc(s.k) + "</div></div>";
+  }).join("");
+  $("ovTime").textContent = new Date().toLocaleTimeString("zh-CN", {hour:"2-digit", minute:"2-digit"});
+}
+
+function renderServices(){
+  var box = $("svcList");
+  if (!state.online){
+    box.innerHTML = IS_REMOTE
+      ? '<div class="note"><b>这是线上只读版。</b>浏览器不允许线上页面访问你本机的服务，所以这里看不到实时状态。' +
+        '<br>要管理 brew 服务，请在本机终端执行 <code class="mono">python3 mactool-bridge.py</code>，' +
+        '然后打开 <code class="mono">http://127.0.0.1:8899</code>。</div>'
+      : '<div class="note"><b>离线模式。</b>启动本地 bridge 后即可在这里查看并管理 brew 服务。' +
+        '<br>启动方法：在本机终端执行 <code class="mono">python3 mactool-bridge.py</code>，然后打开它打印的地址。</div>';
+    return;
+  }
+  if (state.loading){ box.innerHTML = '<div class="note">正在读取服务状态…</div>'; return; }
+  if (!state.services.length){ box.innerHTML = '<div class="note">没有检测到 brew 服务。用 <code class="mono">brew install</code> 装个 nginx / redis 试试。</div>'; return; }
+
+  box.innerHTML = state.services.map(function(s){
+    var cls = s.running ? (s.ports && s.ports.length ? "run" : "err") : "stop";
+    var badge = s.running ? (s.ports && s.ports.length ? '<span class="badge run">运行中</span>' : '<span class="badge err">无端口</span>')
+                          : '<span class="badge stop">已停止</span>';
+    var ports = (s.ports && s.ports.length) ? '<span>端口 <b>' + s.ports.join(", ") + "</b></span>" : "";
+    var user = s.user ? "<span>" + esc(s.user) + "</span>" : "";
+    var conf = s.conf ? '<button class="btn sm" data-act="openConf" data-arg="' + esc(s.conf) + '">配置</button>' : "";
+    var act = s.running
+      ? '<button class="btn sm warn" data-act="svcRestart" data-arg="' + esc(s.name) + '">重启</button>' +
+        '<button class="btn sm err" data-act="svcStop" data-arg="' + esc(s.name) + '">停止</button>'
+      : '<button class="btn sm ok" data-act="svcStart" data-arg="' + esc(s.name) + '">启动</button>';
+    return '<div class="svc ' + cls + '"><span class="st"></span>' +
+      '<div class="info"><div class="nm">' + esc(s.name) + badge + "</div>" +
+      '<div class="meta">' + ports + user + (s.file ? "<span>" + esc(String(s.file).replace(/.*\//,"")) + "</span>" : "") + "</div></div>" +
+      '<div class="ac">' + act + conf + "</div></div>";
+  }).join("");
+}
+
+function renderPorts(){
+  var t = $("portsTbl");
+  if (!state.online || !state.ports.length){
+    t.innerHTML = "";
+    $("portsMeta").textContent = state.online ? "无" : "—";
+    return;
+  }
+  $("portsMeta").textContent = state.ports.length + " 个";
+  var h = '<tr><th>端口</th><th>进程</th><th>PID</th><th>监听地址</th><th></th></tr>';
+  h += state.ports.slice(0, 60).map(function(p){
+    return "<tr>" +
+      '<td class="mono" style="color:var(--cyan);font-weight:600">' + p.port + "</td>" +
+      '<td class="mono">' + esc(p.cmd) + "</td>" +
+      '<td class="mono" style="color:var(--tx3)">' + esc(p.pid) + "</td>" +
+      '<td class="mono" style="color:var(--tx3)">' + esc(p.addr) + "</td>" +
+      '<td style="text-align:right"><button class="btn sm err" data-act="kill" data-arg="' + esc(p.pid) + '">结束</button></td>' +
+    "</tr>";
+  }).join("");
+  t.innerHTML = h;
+}
+
+function renderLinks(){
+  function card(l, mine){
+    var isDir = l.t === "dir";
+    var real = expandPath(l.p);
+    var termPath = isDir ? real : dirOf(real);
+    var ac =
+      '<button class="btn sm pri" data-act="edit" data-arg="' + esc(l.p) + '">' + icon("code",12) + " 编辑</button>" +
+      '<button class="btn sm" data-act="reveal" data-arg="' + esc(l.p) + '">' + icon("eye",12) + " 显示</button>" +
+      '<button class="btn sm" data-act="term" data-arg="' + esc(termPath) + '">' + icon("term",12) + " 终端</button>";
+    return '<div class="lk">' + (mine ? '<button class="del" data-act="delLink" data-arg="' + esc(l.p) + '" title="移除">' + icon("trash",13) + "</button>" : "") +
+      '<div class="t"><div class="ic ' + (isDir ? "c-dir" : "c-file") + '">' + icon(l.ic || (isDir ? "folder" : "file"), 15) + "</div>" +
+      '<div class="nm">' + esc(l.n) + "</div>" +
+      '<span class="tag">' + (isDir ? "目录" : "文件") + "</span></div>" +
+      '<div class="pth">' + esc(l.p) + "</div>" +
+      '<div class="ac">' + ac + "</div></div>";
+  }
+  var all = BUILTIN_LINKS;
+  var mine = state.data.myLinks || [];
+
+  $("linksConf").innerHTML = all.filter(function(l){ return l.g === "conf"; }).map(function(l){ return card(l, false); }).join("");
+  $("linksDir").innerHTML  = all.filter(function(l){ return l.g === "dir";  }).map(function(l){ return card(l, false); }).join("");
+  $("linksMy").innerHTML   = mine.length
+    ? mine.map(function(l){ return card(l, true); }).join("")
+    : '<div class="note" style="grid-column:1/-1">还没有自定义快捷方式。点右上角「添加」把你常用的项目目录 / 配置文件加进来。</div>';
+  $("myLinkCnt").textContent = mine.length ? "(" + mine.length + ")" : "";
+}
+
+function renderShortcuts(){
+  var list = filteredShortcuts();
+  var favs = state.data.favs || [];
+  var cats = ["全部"].concat(catList(SHORTCUTS));
+  $("keyCats").innerHTML = cats.map(function(c){
+    return '<button class="chip' + (state.keyCat === c ? " on" : "") + '" data-cat="' + esc(c) + '">' + esc(c) + "</button>";
+  }).join("");
+  $("keyMeta").textContent = list.length + " 条" + (favs.length ? " · 收藏 " + favs.length : "");
+  $("btnFavOnly").className = "btn" + (state.favOnly ? " pri" : "");
+
+  if (!list.length){
+    $("keyList").innerHTML = '<div class="note" style="grid-column:1/-1">没有匹配的快捷键，换个关键词试试。</div>';
+    return;
+  }
+  $("keyList").innerHTML = list.map(function(s){
+    var on = favs.indexOf(s.id) >= 0;
+    return '<div class="sc">' +
+      '<div class="keys">' + s.k.map(function(k){ return '<kbd>' + esc(k) + "</kbd>"; }).join("") + "</div>" +
+      '<div class="dsc">' + esc(s.d) + "</div>" +
+      '<button class="fav' + (on ? " on" : "") + '" data-act="fav" data-arg="' + esc(s.id) + '" title="收藏">' +
+        '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" style="fill:' + (on ? "var(--warn)" : "none") + '" stroke="currentColor" stroke-width="2" stroke-linejoin="round">' +
+        ICONS.star + "</svg></button></div>";
+  }).join("");
+}
+
+function renderSnippets(){
+  var list = filteredSnippets();
+  var cats = ["全部"].concat(catList(allSnippets()));
+  $("cmdCats").innerHTML = cats.map(function(c){
+    return '<button class="chip' + (state.cmdCat === c ? " on" : "") + '" data-cat="' + esc(c) + '">' + esc(c) + "</button>";
+  }).join("");
+
+  if (!list.length){
+    $("cmdList").innerHTML = '<div class="note">没有匹配的命令，换个关键词试试。</div>';
+    return;
+  }
+  // 必须用全量库里的真实下标：筛选后的下标与全量下标不一致，否则会删错条目
+  var FULL = allSnippets();
+  $("cmdList").innerHTML = list.map(function(s){
+    var mine = (state.data.mySnips || []).indexOf(s) >= 0;
+    var ri = FULL.indexOf(s);
+    return '<div class="snip"><div class="snip-h">' +
+      '<span class="badge">' + esc(s.c) + "</span>" +
+      '<div class="d">' + esc(s.d) + "</div>" +
+      (mine ? '<button class="btn sm" data-act="delSnip" data-arg="' + ri + '">删除</button>' : "") +
+      "</div>" +
+      '<div class="snip-c"><code>' + esc(s.cmd) + "</code>" +
+      '<button class="cp" data-act="copy" data-arg="' + esc(s.cmd) + '" title="复制">' + icon("copy",14) + "</button>" +
+      "</div></div>";
+  }).join("");
+}
+
+function fmtSize(bytes){
+  var n = Number(bytes) || 0;
+  if (n < 1024) return n + " B";
+  if (n < 1048576) return (n / 1024).toFixed(1) + " KB";
+  if (n < 1073741824) return (n / 1048576).toFixed(1) + " MB";
+  return (n / 1073741824).toFixed(2) + " GB";
+}
+
+function renderHero(){
+  var h = new Date().getHours();
+  var hi = h < 6 ? "夜深了" : h < 12 ? "早上好" : h < 14 ? "中午好" : h < 18 ? "下午好" : "晚上好";
+  $("heroT").textContent = hi + "，大志";
+  var wk = "日一二三四五六".charAt(new Date().getDay());
+  var dt = new Date();
+  $("heroS").textContent = (dt.getMonth() + 1) + "月" + dt.getDate() + "日 星期" + wk +
+    " · " + (state.online ? "bridge 已连接，一切尽在掌握" : IS_REMOTE ? "线上只读版" : "本地模式");
+}
+
+/* 每日一技 + 原生替代方案（互不调渲染，只读数据） */
+function renderTips(){
+  var day = Math.floor(Date.now() / 86400000);
+  var idx = ((day + state.tipIdx) % TIPS.length + TIPS.length) % TIPS.length;
+  var t = TIPS[idx];
+  var h = '<div class="tip"><div class="tip-h"><span class="tt">每日一技</span><div class="sp"></div>' +
+    '<span class="chg">' + (idx + 1) + " / " + TIPS.length + "</span>" +
+    '<button class="btn sm" data-act="nextTip">换一条</button></div>' +
+    '<div class="t1">' + esc(t.t) + "</div>" +
+    '<div class="t2">' + esc(t.d) + "</div>";
+  if (t.steps && t.steps.length){
+    h += '<ol class="steps">' + t.steps.map(function(s, i){
+      return '<li data-n="' + (i + 1) + '">' + esc(s) + "</li>";
+    }).join("") + "</ol>";
+  }
+  if (t.cmd){
+    h += '<div class="snip-c" style="margin-top:12px;border-radius:9px;border:1px solid var(--line)"><code>' + esc(t.cmd) + "</code>" +
+      '<button class="cp" data-act="copy" data-arg="' + esc(t.cmd) + '" title="复制">' + icon("copy", 14) + "</button></div>";
+  }
+  h += "</div>";
+  $("tipDaily").innerHTML = h;
+
+  $("nativeList").innerHTML = NATIVE.map(function(n){
+    var body = '<div class="d" style="font-size:13px;color:var(--tx2);line-height:1.65;margin-top:6px">' + esc(n.d) + "</div>";
+    if (n.steps && n.steps.length){
+      body += '<ol class="steps">' + n.steps.map(function(s, i){
+        return '<li data-n="' + (i + 1) + '">' + esc(s) + "</li>";
+      }).join("") + "</ol>";
+    }
+    if (n.cmd){
+      body += '<div class="snip-c" style="margin-top:12px;border-radius:9px;border:1px solid var(--line)"><code>' + esc(n.cmd) + "</code>" +
+        '<button class="cp" data-act="copy" data-arg="' + esc(n.cmd) + '" title="复制">' + icon("copy", 14) + "</button></div>";
+    }
+    return '<div class="cl-item" style="align-items:flex-start"><div class="info">' +
+      '<div class="nm">' + esc(n.n) + '<span class="risk r2">' + esc(n.was) + "</span></div>" +
+      body + "</div></div>";
+  }).join("");
+}
+
+/* 清理模块（只读 state.clean） */
+function cleanResultHtml(){
+  var lr = state.clean.lastResult;
+  if (!lr) return "";
+  var allOk = !(lr.fails && lr.fails.length);
+  var h = '<div class="cl-sum"><div class="big" style="color:var(--' + (allOk ? "ok" : "warn") + ')">' + fmtSize(lr.freed) +
+    '</div><div class="sub">上次清理释放的空间（' + lr.n + " / " + lr.total + " 项成功）</div></div>";
+  if (!allOk){
+    h += '<details class="cl-fails"><summary>' + lr.fails.length + ' 个条目未能删除，点开看原因</summary>' +
+      lr.fails.map(function(f){
+        return '<div class="cl-fail"><span class="fn">' + esc(f.name) + '</span><span class="fr">' + esc(f.reason) + "</span></div>";
+      }).join("") +
+      '<div class="cl-ftip">被占用的：关掉对应程序后重新扫描再清即可；没有权限的：属于系统保护范围，跳过不影响安全。</div></details>';
+  }
+  return h;
+}
+
+function renderClean(){
+  var c = state.clean;
+  var box = $("cleanBody");
+
+  var lv = '<div class="lv-chips">' + [
+    {lv:1, n:"保守"}, {lv:2, n:"标准"}, {lv:3, n:"深度"}
+  ].map(function(x){
+    return '<button class="lv-chip' + (c.level === x.lv ? " on" : "") + '" data-act="cleanLevel" data-arg="' + x.lv + '">' + x.n + "</button>";
+  }).join("") + "</div>";
+
+  if (c.scanning || c.running){
+    box.innerHTML = lv + '<div class="note"><span class="spin"></span> ' +
+      (c.running ? "正在清理，缓存大可能要一两分钟，别关页面…" : "正在扫描，缓存目录大的话要等一会儿…") + "</div>";
+    return;
+  }
+  if (!c.items){
+    box.innerHTML = lv + '<div class="note">选择一个清理档位然后点「开始扫描」。<br>' +
+      "<b>保守</b>＝废纸篓等确定安全的 ｜ <b>标准</b>＝各类应用与包管理器缓存 ｜ <b>深度</b>＝再含 Xcode 编译产物等开发缓存（影响下次编译速度）。</div>";
+    if (c.lastResult){
+      box.innerHTML += cleanResultHtml();
+    }
+    return;
+  }
+
+  var sel = 0, tot = 0;
+  var rows = c.items.map(function(it){
+    var on = !!c.checked[it.key];
+    if (on){ sel++; tot += it.size; }
+    var risk = {1:"安全", 2:"标准", 3:"谨慎"}[it.risk] || "";
+    return '<label class="cl-item' + (it.exists ? "" : " off") + '">' +
+      '<input type="checkbox" class="ck" data-act="cleanCheck" data-arg="' + esc(it.key) + '"' + (on ? " checked" : "") + (!it.exists ? " disabled" : "") + ">" +
+      '<div class="info"><div class="nm">' + esc(it.label) +
+      '<span class="risk r' + it.risk + '">' + risk + "</span>" +
+      (!it.exists ? '<span class="badge">不存在，跳过</span>' : "") + "</div>" +
+      '<div class="pth">' + esc(it.path) + "</div>" +
+      (it.desc ? '<div class="ds">' + esc(it.desc) + "</div>" : "") + "</div>" +
+      '<div class="sz">' + (it.exists ? fmtSize(it.size) : "—") + "</div></label>";
+  }).join("");
+
+  box.innerHTML = cleanResultHtml() + lv +
+    '<div class="cl-sum"><div class="big" style="color:' + (tot > 0 ? "var(--pri)" : "var(--tx3)") + '">' + fmtSize(tot) +
+    '</div><div class="sub">已选 ' + sel + " 项，可释放约这个大小的空间<br>（实际以清理结果为准）</div>" +
+    '<div style="flex:1"></div>' +
+    '<button class="btn err" data-act="cleanRun"' + (sel ? "" : " disabled") + ">清理选中项</button>" +
+    '<button class="btn" data-act="cleanReset">重置</button></div>' + rows;
+}
+
+/* ───────────── 统一刷新入口（唯一允许批量调渲染的地方） ───────────── */
+function refreshAll(){
+  renderConn();
+  renderTabs();
+  renderHero();
+  renderAlerts();
+  renderOverview();
+  renderServices();
+  renderPorts();
+  renderLinks();
+  renderShortcuts();
+  renderSnippets();
+  renderClean();
+  renderTips();
+}
+
+/* ───────────── 弹窗 ───────────── */
+var pendingConfirm = null;
+function closeModal(){
+  $("mask").className = "mask";
+  if (pendingConfirm){ pendingConfirm(false); pendingConfirm = null; }
+}
+function askConfirm(title, html, okLabel, okCls){
+  return new Promise(function(res){
+    pendingConfirm = res;
+    openModal(title, html,
+      '<button class="btn" data-act="closeModal">取消</button>' +
+      '<button class="btn ' + (okCls || "pri") + '" data-act="confirmOk">' + (okLabel || "确定") + "</button>");
+  });
+}
+function openModal(title, body, footer){
+  $("modal").innerHTML =
+    '<div class="modal-h"><h3>' + esc(title) + '</h3><button class="x" data-act="closeModal">' +
+    '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
+    '<div class="modal-b">' + body + "</div>" +
+    (footer ? '<div class="modal-f">' + footer + "</div>" : "");
+  $("mask").className = "mask on";
+}
+
+function showHelp(){
+  openModal("怎么启动本地 bridge",
+    '<div class="note" style="margin-bottom:14px"><b>为什么要它？</b><br>' +
+    '浏览器出于安全限制，读不到你机器的进程和服务。bridge 是一个跑在你本机的小服务，' +
+    '只监听 <code class="mono">127.0.0.1</code>，外网访问不到。</div>' +
+    '<div class="fld"><label>1 · 在本机终端执行</label>' +
+    '<div class="snip-c"><code id="cmdStart">cd ~/Sites/macTool &amp;&amp; python3 mactool-bridge.py</code>' +
+    '<button class="cp" data-act="copy" data-arg="cd ~/Sites/macTool &amp;&amp; python3 mactool-bridge.py">' + icon("copy",14) + "</button></div>" +
+    '<div class="hint">终端会打印一个地址，一般是 http://127.0.0.1:8899</div></div>' +
+    '<div class="fld"><label>2 · 用浏览器打开那个地址</label>' +
+    '<div class="hint">不要直接双击 HTML 文件，那样会走离线模式。必须由 bridge 托管页面才能操作本机。</div></div>' +
+    '<div class="fld"><label>3 · 建议设为开机自启</label>' +
+    '<div class="hint">我可以帮你生成一个 launchd 配置，登录即自动启动，不用每次手动开。</div></div>' +
+    '<div class="note"><b>安全边界：</b>只监听回环地址 ｜ 仅开放白名单动作 ｜ 不提供任意命令执行 ｜ 所有路径做越权校验。</div>',
+    '<button class="btn" data-act="closeModal">知道了</button>');
+}
+
+function showAddLink(){
+  openModal("添加快捷方式",
+    '<div class="fld"><label>名称</label><input id="lkName" placeholder="比如：博客项目" autocomplete="off"></div>' +
+    '<div class="fld"><label>路径</label><input id="lkPath" placeholder="/Users/... 或 ~/Sites/blog" autocomplete="off">' +
+    '<div class="hint">支持 ~ 开头。路径必须真实存在，否则按钮会失效。</div></div>' +
+    '<div class="fld"><label>类型</label><select id="lkType"><option value="dir">目录</option><option value="file">文件</option></select></div>',
+    '<button class="btn" data-act="closeModal">取消</button><button class="btn pri" data-act="saveLink">保存</button>');
+  setTimeout(function(){ var e = $("lkName"); if (e) e.focus(); }, 60);
+}
+
+function showAddSnip(){
+  openModal("添加命令片段",
+    '<div class="fld"><label>说明</label><input id="spDesc" placeholder="比如：重启 php-fpm" autocomplete="off"></div>' +
+    '<div class="fld"><label>命令</label><textarea id="spCmd" rows="3" placeholder="brew services restart php" style="resize:vertical"></textarea></div>' +
+    '<div class="fld"><label>分类</label><input id="spCat" placeholder="自定义" autocomplete="off"><div class="hint">留空归到「自定义」</div></div>',
+    '<button class="btn" data-act="closeModal">取消</button><button class="btn pri" data-act="saveSnip">保存</button>');
+  setTimeout(function(){ var e = $("spDesc"); if (e) e.focus(); }, 60);
+}
+
+function showMenu(){
+  var n = (state.data.myLinks || []).length + (state.data.mySnips || []).length + (state.data.favs || []).length;
+  openModal("设置与数据",
+    '<div class="fld"><label>数据备份</label>' +
+    '<div style="display:flex;gap:9px;flex-wrap:wrap">' +
+    '<button class="btn" data-act="export">导出 JSON 备份</button>' +
+    '<button class="btn" data-act="import">导入恢复</button></div>' +
+    '<div class="hint">当前自定义数据 ' + n + ' 条。备份文件包含你的快捷方式、命令片段和收藏。</div></div>' +
+    '<div class="fld"><label>危险操作</label>' +
+    '<button class="btn err" data-act="clearAll">清空我的自定义数据</button>' +
+    '<div class="hint">只清自定义内容，不影响内置的快捷键与命令库。</div></div>' +
+    '<div class="note"><b>说明：</b>所有数据都存在你自己浏览器的本地存储里，不会上传到任何服务器。' +
+    '换浏览器或清缓存会丢失，建议定期导出备份。</div>',
+    '<button class="btn" data-act="closeModal">关闭</button>');
+}
+
+/* ───────────── 导入导出 ───────────── */
+function doExport(){
+  var payload = {
+    app: "mactool-workspace",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    data: state.data
+  };
+  var blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  var d = new Date();
+  var pad = function(x){ return (x < 10 ? "0" : "") + x; };
+  a.download = "mac工具台备份-" + d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + ".json";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1500);
+  toast("备份已导出", "ok");
+}
+function doImport(){
+  var inp = document.createElement("input");
+  inp.type = "file"; inp.accept = "application/json,.json";
+  inp.onchange = function(){
+    var f = inp.files && inp.files[0];
+    if (!f) return;
+    var fr = new FileReader();
+    fr.onload = function(){
+      try{
+        var j = JSON.parse(fr.result);
+        var d = j && j.data ? j.data : j;
+        if (!d || typeof d !== "object") throw new Error("格式不对");
+        var base = defaultData();
+        base.myLinks = Array.isArray(d.myLinks) ? d.myLinks : [];
+        base.mySnips = Array.isArray(d.mySnips) ? d.mySnips : [];
+        base.favs    = Array.isArray(d.favs) ? d.favs : [];
+        state.data = base;
+        saveData();
+        refreshAll();
+        closeModal();
+        toast("已恢复 " + (base.myLinks.length + base.mySnips.length + base.favs.length) + " 条数据", "ok");
+      }catch(e){ toast("导入失败：文件不是有效的备份", "err"); }
+    };
+    fr.readAsText(f);
+  };
+  inp.click();
+}
+
+/* ───────────── 事件（改数据 → refreshAll） ───────────── */
+document.addEventListener("click", async function(ev){
+  var tb = ev.target.closest("[data-tab]");
+  if (tb){ state.tab = tb.getAttribute("data-tab"); refreshAll(); window.scrollTo({top:0, behavior:"smooth"}); return; }
+
+  var cat = ev.target.closest("[data-cat]");
+  if (cat){
+    var c = cat.getAttribute("data-cat");
+    if (state.tab === "key") state.keyCat = c; else state.cmdCat = c;
+    refreshAll();
+    return;
+  }
+
+  var el = ev.target.closest("[data-act]");
+  if (!el) return;
+  var a = el.getAttribute("data-act");
+  var arg = el.getAttribute("data-arg") || "";
+
+  switch(a){
+    case "closeModal": closeModal(); break;
+    case "confirmOk": {
+      var cb = pendingConfirm; pendingConfirm = null;
+      closeModal();
+      if (cb) cb(true);
+      break;
+    }
+    case "showHelp": showHelp(); break;
+    case "svcStart":   serviceAct(arg, "start"); break;
+    case "svcStop":    serviceAct(arg, "stop"); break;
+    case "svcRestart": serviceAct(arg, "restart"); break;
+    case "kill":       killPort(arg); break;
+    case "openConf":   act("/api/editor", {path: arg, copy: "open " + arg, okMsg:"已尝试用编辑器打开"}); break;
+    case "edit":       act("/api/editor", {path: arg, copy: "open " + arg, okMsg:"已尝试打开"}); break;
+    case "reveal":     act("/api/reveal", {path: arg, copy: "open -R " + arg, okMsg:"已在 Finder 中显示"}); break;
+    case "term":       act("/api/terminal", {path: arg, copy: "open -a Terminal " + arg, okMsg:"已打开终端"}); break;
+    case "copy":       copyText(arg); break;
+    case "nfCreate": {
+      var dir = $("nfDir").value;
+      var name = ($("nfName").value || "").trim();
+      if (!name){ toast("请填写文件名", "err"); break; }
+      var ok = await act("/api/newfile", {dir:dir, name:name, okMsg:"已创建 " + name});
+      if (ok){
+        closeModal();
+        if (await askConfirm("打开文件", "已创建 <b>" + esc(name) + "</b>，要在编辑器中打开吗？", "打开编辑器")){
+          act("/api/editor", {path: expandPath(dir) + "/" + name, okMsg:"已打开"});
+        }
+      }
+      break;
+    }
+    case "nfTerm": act("/api/terminal", {path: $("nfDir").value, okMsg:"已打开终端"}); break;
+    case "copyUpgrade":copyText("brew upgrade"); break;
+    case "copyCleanup":copyText("brew cleanup -s && rm -rf $(brew --cache)"); break;
+    case "fav": {
+      var f = state.data.favs;
+      var i = f.indexOf(arg);
+      if (i >= 0) f.splice(i, 1); else f.push(arg);
+      saveData(); refreshAll();
+      break;
+    }
+    case "delLink": {
+      if (!(await askConfirm("移除快捷方式", "移除这条快捷方式？", "移除", "err"))) break;
+      state.data.myLinks = (state.data.myLinks || []).filter(function(x){ return x.p !== arg; });
+      saveData(); refreshAll(); toast("已移除", "ok");
+      break;
+    }
+    case "delSnip": {
+      var idx = parseInt(arg, 10);
+      var s = allSnippets()[idx];
+      if (!s) break;
+      state.data.mySnips = (state.data.mySnips || []).filter(function(x){ return x !== s; });
+      saveData(); refreshAll(); toast("已删除", "ok");
+      break;
+    }
+    case "saveLink": {
+      var n = ($("lkName").value || "").trim();
+      var p = ($("lkPath").value || "").trim();
+      var t = $("lkType").value;
+      if (!n || !p){ toast("名称和路径都不能为空", "err"); break; }
+      state.data.myLinks.push({t:t, n:n, p:p, g:"my", ic: t === "dir" ? "folder" : "file"});
+      saveData(); closeModal(); refreshAll(); toast("已添加", "ok");
+      break;
+    }
+    case "saveSnip": {
+      var d = ($("spDesc").value || "").trim();
+      var cm = ($("spCmd").value || "").trim();
+      var cc = ($("spCat").value || "").trim() || "自定义";
+      if (!d || !cm){ toast("说明和命令都不能为空", "err"); break; }
+      state.data.mySnips.push({c:cc, d:d, cmd:cm});
+      saveData(); closeModal(); refreshAll(); toast("已添加", "ok");
+      break;
+    }
+    case "export": doExport(); break;
+    case "import": doImport(); break;
+    case "nextTip": state.tipIdx++; renderTips(); break;
+    case "cleanLevel": {
+      state.clean.level = parseInt(arg, 10) || 1;
+      applyCleanLevel();
+      refreshAll();
+      break;
+    }
+    case "cleanCheck": {
+      if (state.clean.checked[arg]) delete state.clean.checked[arg];
+      else state.clean.checked[arg] = true;
+      refreshAll();
+      break;
+    }
+    case "cleanRun": showCleanConfirm(); break;
+    case "cleanConfirm": closeModal(); runClean(); break;
+    case "cleanReset": {
+      state.clean = {scanning:false, items:null, level:2, checked:{}, running:false, lastResult: state.clean.lastResult};
+      refreshAll();
+      break;
+    }
+    case "clearAll": {
+      if (!(await askConfirm("清空数据", "确定清空全部自定义数据（快捷方式 / 命令片段 / 收藏）？<br><b>此操作不可撤销</b>，建议先导出备份。", "清空", "err"))) break;
+      state.data = defaultData();
+      saveData(); closeModal(); refreshAll(); toast("已清空", "ok");
+      break;
+    }
+  }
+});
+
+document.addEventListener("input", function(ev){
+  if (ev.target.id === "keySearch"){ state.keyQ = ev.target.value; renderShortcuts(); }
+  if (ev.target.id === "cmdSearch"){ state.cmdQ = ev.target.value; renderSnippets(); }
+});
+
+$("btnFavOnly").addEventListener("click", function(){ state.favOnly = !state.favOnly; renderShortcuts(); });
+$("btnScan").addEventListener("click", scanClean);
+$("btnAddLink").addEventListener("click", showAddLink);
+$("btnAddSnip").addEventListener("click", showAddSnip);
+$("btnMenu").addEventListener("click", showMenu);
+$("btnRefresh").addEventListener("click", async function(){
+  toast("正在刷新…");
+  await checkPing();
+  await loadServices();
+  await loadExtras();
+  toast(state.online ? "已刷新" : "bridge 未连接", state.online ? "ok" : "err");
+});
+$("btnAllStart").addEventListener("click", async function(){
+  if (IS_REMOTE){ toast("线上只读版无法控制本机服务", "err"); return; }
+  var list = state.services.filter(function(s){ return !s.running; });
+  if (!list.length){ toast("没有已停止的服务", "ok"); return; }
+  if (!(await askConfirm("全部启动", "确定启动 " + list.length + " 个服务？", "全部启动"))) return;
+  for (var i = 0; i < list.length; i++){
+    await bridgeGet("/api/service/act?act=start&name=" + encodeURIComponent(list[i].name), 60000);
+  }
+  await loadServices();
+  toast("已全部启动", "ok");
+});
+$("btnAllStop").addEventListener("click", async function(){
+  if (IS_REMOTE){ toast("线上只读版无法控制本机服务", "err"); return; }
+  var list = state.services.filter(function(s){ return s.running; });
+  if (!list.length){ toast("没有运行中的服务", "ok"); return; }
+  if (!(await askConfirm("全部停止", "确定停止 " + list.length + " 个服务？", "全部停止", "err"))) return;
+  for (var i = 0; i < list.length; i++){
+    await bridgeGet("/api/service/act?act=stop&name=" + encodeURIComponent(list[i].name), 60000);
+  }
+  await loadServices();
+  toast("已全部停止", "ok");
+});
+function showNewFile(){
+  var opts = BUILTIN_LINKS.concat(state.data.myLinks || []).filter(function(l){ return l.t === "dir"; });
+  openModal("新建文件",
+    '<div class="fld"><label>目标目录</label><select id="nfDir">' +
+    opts.map(function(l){
+      return '<option value="' + esc(l.p) + '">' + esc(l.n + "  —  " + l.p) + "</option>";
+    }).join("") + "</select></div>" +
+    '<div class="fld"><label>文件名</label><input id="nfName" placeholder="例如 notes.md" autocomplete="off">' +
+    '<div class="hint">文件名不能包含「/」，重名时不会覆盖。</div></div>',
+    '<button class="btn" data-act="nfTerm">在该目录打开终端</button>' +
+    '<button class="btn pri" data-act="nfCreate">新建文件</button>');
+  setTimeout(function(){ var e = $("nfName"); if (e) e.focus(); }, 60);
+}
+$("btnNewFile").addEventListener("click", showNewFile);
+$("mask").addEventListener("click", function(ev){ if (ev.target === $("mask")) closeModal(); });
+document.addEventListener("keydown", function(ev){
+  if (ev.key === "Escape") closeModal();
+});
+
+/* ───────────── 初始化（单一入口，顺序固定） ───────────── */
+(async function init(){
+  state.data = loadData();
+  saveData();                   // 落一次基线，保证后续读写有一致的 key
+  refreshAll();                 // 先渲染静态内容，保证首屏不空
+  await checkPing();
+  refreshAll();
+  if (state.online){
+    await loadServices();
+    loadExtras();               // 慢接口，不阻塞首屏
+  }
+})();
+</script>
+</body>
+</html>

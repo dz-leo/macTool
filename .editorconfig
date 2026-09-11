@@ -1,0 +1,23 @@
+# 统一代码风格 —— 编辑器请遵守本文件（VS Code / JetBrains / Sublime 均原生支持）
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# Python：PEP 8，4 空格缩进
+[*.py]
+indent_size = 4
+max_line_length = 120
+
+# Markdown：行尾两个空格是合法换行语法，不要删
+[*.md]
+trim_trailing_whitespace = false
+
+# 单文件 HTML 里的内联 CSS/JS 维持 2 空格缩进
+[*.html]
+indent_size = 2
